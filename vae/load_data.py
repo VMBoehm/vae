@@ -70,6 +70,13 @@ def load_fmnist():
     return x_train, y_train, x_test, y_test
 
 
+def reshape_cifar(x):
+
+    x = x.reshape([-1, 3, 32, 32])
+    x = x.transpose([0, 2, 3, 1])
+    return x.reshape(-1,3*32*32)
+
+
 
 def load_cifar10():
     """   
@@ -108,7 +115,9 @@ def load_cifar10():
         label= d['labels']
         test_x = data
         test_y = np.asarray(label)
-                
+
+    train_x = reshape_cifar(train_x)
+    test_x  = reshape_cifar(test_x)
     return train_x, train_y, test_x, test_y
 
 

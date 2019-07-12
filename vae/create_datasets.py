@@ -38,6 +38,9 @@ def build_input_fns(data_type,batch_size,label):
     train_sample_size = len(x_train)
     test_sample_size  = len(x_test)
 
+    x_train = x_train.astype(np.float32)
+    x_test  = x_test.astype(np.float32)
+
     def train_input_fn():
         train_dataset = tf.data.Dataset.from_tensor_slices((x_train,y_train))
         trainset = train_dataset.shuffle(max(train_sample_size,10000)).repeat().batch(batch_size)

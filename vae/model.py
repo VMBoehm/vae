@@ -15,7 +15,7 @@ import vae.networks as nw
 
 ### these two function are taken from https://github.com/tensorflow/probability/blob/master/tensorflow_probability/examples/vae.py and modified to work with flattened data ny adding a shape keyword
 
-def pack_images(images, rows, cols, shape):
+def pack_images(images, rows, cols,shape):
     """Helper utility to make a field of images.
     Borrowed from Tensorflow Probability
     """
@@ -60,7 +60,7 @@ def get_likelihood(decoder, likelihood_type):
 
 def model_fn(features, labels, mode, params, config):
     del labels, config
-    
+    print(features)  
     #putting fully connected stuff for mnist here, but should be generalized
     encoder      = nw.make_encoder(params['activation'], params['latent_size'], params['network_type'])
     decoder      = nw.make_decoder(params['activation'], params['output_size'], params['network_type'])

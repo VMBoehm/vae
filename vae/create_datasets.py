@@ -37,15 +37,17 @@ def build_input_fns(data_type,batch_size,label):
     
     train_sample_size = len(x_train)
     test_sample_size  = len(x_test)
-    train_dataset = tf.data.Dataset.from_tensor_slices((x_train,y_train))
-    test_dataset  = tf.data.Dataset.from_tensor_slices((x_test,y_test))
+    #train_dataset = tf.data.Dataset.from_tensor_slices((x_train,y_train))
+    #test_dataset  = tf.data.Dataset.from_tensor_slices((x_test,y_test))
 
     def train_input_fn():
+        train_dataset = tf.data.Dataset.from_tensor_slices((x_train,y_train))
         trainset = train_dataset.shuffle(max(train_sample_size,10000)).repeat().batch(batch_size)
         iterator = tf.compat.v1.data.make_one_shot_iterator(trainset)
         return iterator.get_next()
 
     def eval_input_fn():
+        test_dataset  = tf.data.Dataset.from_tensor_slices((x_test,y_test))
         testset = test_dataset.shuffle(max(test_sample_size,10000)).repeat().batch(batch_size)
         return tf.compat.v1.data.make_one_shot_iterator(testset).get_next()
 

@@ -15,13 +15,13 @@ import os
 
 # tensorflow packages
 import tensorflow as tf
-tf.enable_eager_execution()
+#tf.compat.v1.enable_eager_execution()
 import tensorflow_hub as hub
-import tensorflow_datasets as tfds
 import tensorflow_probability as tfp
 tfd = tfp.distributions
 
 import vae.create_datasets as crd
+from  vae.model import model_fn
 #import vae.model as model
 
 
@@ -35,9 +35,9 @@ flags.DEFINE_integer('max_steps', default=1000, help='training steps')
 flags.DEFINE_integer('latent_size',default=8, help='dimensionality of latent space')
 flags.DEFINE_string('activation', default='leaky_relu', help='activation function')
 flags.DEFINE_integer('n_samples', default=16, help='number of samples for encoding')
-flags.DEFINE_string('network_type', default='fully_connected', flag_values=['fully_connected'], help='whichy type of network to use')
+flags.DEFINE_string('network_type', default='fully_connected', help='whichy type of network to use')
 
-flags.DEFINE_string('likelihood', default='Bernoulli', flag_values=['Bernoulli','Gauss'], help='form of likelihood')
+flags.DEFINE_string('likelihood', default='Bernoulli', help='form of likelihood')
 
 flags.DEFINE_integer('class_label', default=-1, help='number of specific class to train on. -1 for all classes')
 
@@ -60,8 +60,11 @@ def main(argv):
 			
 	
     train_input_fn, eval_input_fn = crd.build_input_fns(params['data_type'], params['batch_size'],label=FLAGS.class_label)
+    estimator = tf.estimator.Estimator(model_fn, params=params, config=tf.estimator.RunConfig(model_dir=FLAGS.model_dir),)
 
-    print(eval_input_fn())
+    estimator.train(train_input_fn, steps=500)
+    eval_results = estimator.evaluate(eval_input_fn)
+
     return True
 
 if __name__ == "__main__":

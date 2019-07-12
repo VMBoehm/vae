@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# /usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Created on Thu Jul 11 11:29:59 2019
@@ -50,12 +50,18 @@ def get_posterior(encoder):
 
     return posterior
 
-def get_likelihood(decoder, likelihood_type):
+def get_likelihood(decoder, likelihood_type, sig):
 
     if likelihood_type=='Bernoulli':
         def likelihood(z):
             return tfd.Independent(tfd.Bernoulli(logits=decoder(z)))
-    
+ 
+    if likelihood_type=='Gauss':
+        sigma = tf.get_variable(name='sigma', initializer=sig)
+        tf.summary.scalar('sigma', sigma)
+        def likelihood(z):
+            return tfd.Independent(tfd.MultivariateNormalDiag(loc=decoder(z),scale_identity_multiplier=sigma))
+
     return likelihood
 
 def model_fn(features, labels, mode, params, config):
@@ -67,7 +73,7 @@ def model_fn(features, labels, mode, params, config):
     
     posterior    = get_posterior(encoder)
     prior        = get_prior(params['latent_size'])
-    likelihood   = get_likelihood(decoder, params['likelihood'])
+    likelihood   = get_likelihood(decoder, params['likelihood'], params['sigma'])
 
     image_tile_summary('inputs',features, rows=4, cols=4, shape=params['image_shape'])
 
@@ -79,7 +85,8 @@ def model_fn(features, labels, mode, params, config):
     decoded_samples = likelihood(prior_sample).mean()
 
     image_tile_summary('recons',decoder_likelihood.mean(), rows=4, cols=4, shape=params['image_shape'])
-    image_tile_summary('samples',decoded_samples, rows=4, cols=4, shape=params['image_shape'])
+    image_tile_summary('samples',decoded_samples, rows=4, cols=4, shape=params['image_shape'])  
+
 
     neg_log_likeli  = - decoder_likelihood.log_prob(features)
     avg_log_likeli  = tf.reduce_mean(input_tensor=neg_log_likeli)

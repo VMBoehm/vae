@@ -35,7 +35,7 @@ flags.DEFINE_integer('n_samples', default=16, help='number of samples for encodi
 flags.DEFINE_string('network_type', default='fully_connected', help='whichy type of network to use')
 
 flags.DEFINE_string('likelihood', default='Bernoulli', help='form of likelihood')
-
+flags.DEFINE_float('sigma', default=0.1, help='noise scale used in the Gaussian likelihood')
 flags.DEFINE_integer('class_label', default=-1, help='number of specific class to train on. -1 for all classes')
 
 FLAGS = flags.FLAGS

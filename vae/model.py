@@ -12,17 +12,40 @@ import tensorflow_probability as tfp
 tfd = tfp.distributions
 import vae.networks as nw
 
+
+### these two function are taken from https://github.com/tensorflow/probability/blob/master/tensorflow_probability/examples/vae.py and modified to work with flattened data ny adding a shape keyword
+
+def pack_images(images, rows, cols, shape):
+    """Helper utility to make a field of images.
+    Borrowed from Tensorflow Probability
+    """
+    width  = shape[-3]
+    height = shape[-2]
+    depth  = shape[-1]
+    images = tf.reshape(images, (-1, width, height, depth))
+    batch = tf.shape(images)[0]
+    rows = tf.minimum(rows, batch)
+    cols = tf.minimum(batch // rows, cols)
+    images = images[:rows * cols]
+    images = tf.reshape(images, (rows, cols, width, height, depth))
+    images = tf.transpose(images, [0, 2, 1, 3, 4])
+    images = tf.clip_by_value(tf.reshape(images, [1, rows * width, cols * height, depth]), 0, 1)
+    return images
+
+def image_tile_summary(name, tensor, rows, cols, shape):
+    tf.summary.image(name, pack_images(tensor, rows, cols, shape), max_outputs=1)
+
+#############
+
 def get_prior(latent_size):
     return tfd.MultivariateNormalDiag(tf.zeros(latent_size), scale_identity_multiplier=1.0)
 
 def get_posterior(encoder):
 
     def posterior(x):
-
         mu, sigma        = tf.split(encoder(x), 2, axis=-1)
         sigma            = tf.nn.softplus(sigma) + 0.0001
         approx_posterior = tfd.MultivariateNormalDiag(loc=mu, scale_diag=sigma)
-        
         return approx_posterior
 
     return posterior
@@ -32,6 +55,7 @@ def get_likelihood(decoder, likelihood_type):
     if likelihood_type=='Bernoulli':
         def likelihood(z):
             return tfd.Independent(tfd.Bernoulli(logits=decoder(z)))
+    
     return likelihood
 
 def model_fn(features, labels, mode, params, config):
@@ -45,13 +69,21 @@ def model_fn(features, labels, mode, params, config):
     prior        = get_prior(params['latent_size'])
     likelihood   = get_likelihood(decoder, params['likelihood'])
 
+    image_tile_summary('inputs',features, rows=4, cols=4, shape=params['image_shape'])
+
     approx_posterior        = posterior(features)
     approx_posterior_sample = approx_posterior.sample(params['n_samples'])
     decoder_likelihood      = likelihood(approx_posterior_sample)
-    neg_log_likeli = - decoder_likelihood.log_prob(features)
-    avg_log_likeli = tf.reduce_mean(input_tensor=neg_log_likeli)
+    
+    prior_sample = prior.sample(params['n_samples'])
+    decoded_samples = likelihood(prior_sample).mean()
 
-  
+    image_tile_summary('recons',decoder_likelihood.mean(), rows=4, cols=4, shape=params['image_shape'])
+    image_tile_summary('samples',decoded_samples, rows=4, cols=4, shape=params['image_shape'])
+
+    neg_log_likeli  = - decoder_likelihood.log_prob(features)
+    avg_log_likeli  = tf.reduce_mean(input_tensor=neg_log_likeli)
+
     kl             = tfd.kl_divergence(approx_posterior, prior)
     avg_kl         = tf.reduce_mean(kl)
   
@@ -61,11 +93,13 @@ def model_fn(features, labels, mode, params, config):
     tf.summary.scalar("log_likelihood", avg_log_likeli)
     tf.summary.scalar("kl_divergence", avg_kl)
 
-    loss = -elbo
+    loss          = -elbo
   
     global_step   = tf.train.get_or_create_global_step()
     learning_rate = tf.train.cosine_decay(params["learning_rate"], global_step, params["max_steps"])
     optimizer     = tf.train.AdamOptimizer(learning_rate)
+
+    tf.summary.scalar('learning_rate',learning_rate)
 
     train_op = optimizer.minimize(loss, global_step=global_step)
   

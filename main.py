@@ -23,7 +23,8 @@ from  vae.model import model_fn
 
 flags.DEFINE_string('model_dir', default='./model', help='directory for storing the model')
 flags.DEFINE_string('data_set', default='mnist', help='the tensorflow-dataset to load')
-	
+flags.DEFINE_string('module_dir', default='./modules', help='directory to which to export the modules')
+
 flags.DEFINE_float('learning_rate', default=1e-3, help='learning rate')    
 flags.DEFINE_integer('batch_size',default=32, help='batch size')
 flags.DEFINE_integer('max_steps', default=10000, help='training steps')    
@@ -55,19 +56,34 @@ def main(argv):
     params['n_channels']  = IMAGE_SHAPE[2]
     params['image_shape'] = IMAGE_SHAPE
 
+
     params['model_dir']   = os.path.join(params['model_dir'], '%s'%params['data_set'], '%s'%params['likelihood'], 'class%d'%params['class_label'])
-    for dd in ['model_dir']:
+    params['module_dir']   = os.path.join(params['module_dir'], '%s'%params['data_set'], '%s'%params['likelihood'], 'class%d'%params['class_label'])
+    
+    for dd in ['model_dir', 'module_dir']:
         if not os.path.isdir(params[dd]):
             os.makedirs(params[dd])
 			
 	
     train_input_fn, eval_input_fn = crd.build_input_fns(params['data_set'], params['batch_size'],label=FLAGS.class_label)
+
     estimator = tf.estimator.Estimator(model_fn, params=params, config=tf.estimator.RunConfig(model_dir=params['model_dir']),)
-    
+
+    c = tf.placeholder(tf.float32,[params['batch_size'],params['output_size']])
+    serving_input_fn = tf.estimator.export.build_raw_serving_input_receiver_fn(features=dict(x=c))
+
+    #train_spec = tf.estimator.TrainSpec(input_fn=train_input_fn, max_steps=params['max_steps'])
+    #eval_spec  = tf.estimator.EvalSpec(input_fn=eval_input_fn)
+    exporter   = hub.LatestModuleExporter("tf_hub", serving_input_fn)
+    #tf.estimator.train_and_evaluate(estimator, train_spec, eval_spec)
+    #exporter.export(estimator, params['module_dir'], estimator.latest_checkpoint())
+
+
     n_steps = FLAGS.n_steps
     for ii in range(FLAGS.max_steps//n_steps):
         estimator.train(train_input_fn, steps=n_steps)
         eval_results = estimator.evaluate(eval_input_fn)
+        exporter.export(estimator, params['module_dir'], estimator.latest_checkpoint())
         print('model evaluation:', eval_results)
 
     return True

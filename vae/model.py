@@ -43,7 +43,7 @@ def get_prior(latent_size):
 def get_posterior(encoder):
 
     def posterior(x):
-        mu, sigma        = tf.split(encoder(x), 2, axis=-1)
+        mu, sigma        = tf.split(encoder({'x':x},as_dict=True)['z'], 2, axis=-1)
         sigma            = tf.nn.softplus(sigma) + 0.0001
         approx_posterior = tfd.MultivariateNormalDiag(loc=mu, scale_diag=sigma)
         return approx_posterior
@@ -66,9 +66,14 @@ def get_likelihood(decoder, likelihood_type, sig):
 
 def model_fn(features, labels, mode, params, config):
     del labels, config
-    print(features)  
+
+    try:
+        features = features['x']
+    except:
+        pass
+
     #putting fully connected stuff for mnist here, but should be generalized
-    encoder      = nw.make_encoder(params['activation'], params['latent_size'], params['network_type'])
+    encoder      = nw.make_encoder(params['activation'], params['output_size'],params['latent_size'], params['network_type'])
     decoder      = nw.make_decoder(params['activation'], params['output_size'], params['network_type'])
     
     posterior    = get_posterior(encoder)
@@ -86,7 +91,6 @@ def model_fn(features, labels, mode, params, config):
 
     image_tile_summary('recons',decoder_likelihood.mean(), rows=4, cols=4, shape=params['image_shape'])
     image_tile_summary('samples',decoded_samples, rows=4, cols=4, shape=params['image_shape'])  
-
 
     neg_log_likeli  = - decoder_likelihood.log_prob(features)
     avg_log_likeli  = tf.reduce_mean(input_tensor=neg_log_likeli)
@@ -116,4 +120,6 @@ def model_fn(features, labels, mode, params, config):
         'kl_divergence': tf.metrics.mean(avg_kl)
     }
   
-    return tf.estimator.EstimatorSpec(mode=mode, loss=loss, train_op=train_op, eval_metric_ops = eval_metric_ops)
+    predictions = {'code': approx_posterior.mean()}
+    
+    return tf.estimator.EstimatorSpec(mode=mode, loss=loss, train_op=train_op, predictions=predictions, eval_metric_ops = eval_metric_ops)

@@ -8,6 +8,8 @@ a selection of networks to use in the model
 """
 
 import tensorflow as tf
+import tensorflow_hub as hub
+
 
 def fully_connected_encoder(activation,latent_size):
 
@@ -18,7 +20,6 @@ def fully_connected_encoder(activation,latent_size):
             net = tf.layers.dense(net, 256, name='dense_3', activation=activation)
             net = tf.layers.dense(net, 2*latent_size, name='dense_4', activation=None)
         return net
-
     return encoder 
 
 def fully_connected_decoder(activation, output_size):
@@ -32,13 +33,24 @@ def fully_connected_decoder(activation, output_size):
         return net
     return decoder
 
-def make_encoder(activation, latent_size, network_type):
+def make_encoder(activation, output_size, latent_size, network_type):
     
     if network_type=='fully_connected':
-        encoder = fully_connected_encoder(activation, latent_size)
+        encoder_ = fully_connected_encoder(activation, latent_size)
     else:
         raise NotImplementedError("Network type not implemented.")
-    
+
+    def encoder_spec():
+        x = tf.placeholder(tf.float32, shape=[None,output_size])
+        z = encoder_(x)
+        hub.add_signature(inputs={'x':x},outputs={'z':z})
+
+    enc_spec  = hub.create_module_spec(encoder_spec)
+
+    encoder   = hub.Module(enc_spec, name='encoder',trainable=True)
+
+    hub.register_module_for_export(encoder, "encoder")
+
     return encoder
 
 

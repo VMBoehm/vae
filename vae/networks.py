@@ -54,12 +54,23 @@ def make_encoder(activation, output_size, latent_size, network_type):
     return encoder
 
 
-def make_decoder(activation,output_size,network_type):
+def make_decoder(activation,output_size,latent_size,network_type):
 
     if network_type=='fully_connected':
-        decoder = fully_connected_decoder(activation, output_size)
+        decoder_ = fully_connected_decoder(activation, output_size)
     else:
         raise NotImplementedError("Network type not implemented.")
+
+    def decoder_spec():
+        z = tf.placeholder(tf.float32, shape=[None,latent_size]) 
+        x = decoder_(z)
+        hub.add_signature(inputs={'z':z},outputs={'x':x})
+
+    dec_spec  = hub.create_module_spec(decoder_spec)
+
+    decoder   = hub.Module(dec_spec, name='decoder',trainable=True)
+
+    hub.register_module_for_export(decoder, "decoder")
 
     return decoder
 

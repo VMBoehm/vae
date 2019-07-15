@@ -54,13 +54,15 @@ def get_likelihood(decoder, likelihood_type, sig):
 
     if likelihood_type=='Bernoulli':
         def likelihood(z):
-            return tfd.Independent(tfd.Bernoulli(logits=decoder(z)))
+            return tfd.Independent(tfd.Bernoulli(logits=decoder({'z':z},as_dict=True)['x']))
  
     if likelihood_type=='Gauss':
         sigma = tf.get_variable(name='sigma', initializer=sig)
         tf.summary.scalar('sigma', sigma)
         def likelihood(z):
-            return tfd.Independent(tfd.MultivariateNormalDiag(loc=decoder(z),scale_identity_multiplier=sigma))
+            mean = decoder({'z':z},as_dict=True)['x']
+            print(mean)
+            return tfd.Independent(tfd.MultivariateNormalDiag(loc=mean,scale_identity_multiplier=sigma))
 
     return likelihood
 
@@ -74,52 +76,59 @@ def model_fn(features, labels, mode, params, config):
 
     #putting fully connected stuff for mnist here, but should be generalized
     encoder      = nw.make_encoder(params['activation'], params['output_size'],params['latent_size'], params['network_type'])
-    decoder      = nw.make_decoder(params['activation'], params['output_size'], params['network_type'])
-    
-    posterior    = get_posterior(encoder)
-    prior        = get_prior(params['latent_size'])
-    likelihood   = get_likelihood(decoder, params['likelihood'], params['sigma'])
+    decoder      = nw.make_decoder(params['activation'], params['output_size'],params['latent_size'], params['network_type'])
 
-    image_tile_summary('inputs',features, rows=4, cols=4, shape=params['image_shape'])
 
+    posterior               = get_posterior(encoder)
     approx_posterior        = posterior(features)
-    approx_posterior_sample = approx_posterior.sample(params['n_samples'])
-    decoder_likelihood      = likelihood(approx_posterior_sample)
+
+    if mode in [tf.estimator.ModeKeys.TRAIN, tf.estimator.ModeKeys.EVAL]:
+        prior        = get_prior(params['latent_size'])
+        likelihood   = get_likelihood(decoder, params['likelihood'], params['sigma'])
+
+        image_tile_summary('inputs',features, rows=4, cols=4, shape=params['image_shape'])
+
+        approx_posterior_sample = approx_posterior.sample()
+        print(approx_posterior_sample)
+        decoder_likelihood      = likelihood(approx_posterior_sample)
     
-    prior_sample = prior.sample(params['n_samples'])
-    decoded_samples = likelihood(prior_sample).mean()
+        #prior_sample    = prior.sample(params['n_samples'])
+        #decoded_samples = likelihood(prior_sample).mean()
 
-    image_tile_summary('recons',decoder_likelihood.mean(), rows=4, cols=4, shape=params['image_shape'])
-    image_tile_summary('samples',decoded_samples, rows=4, cols=4, shape=params['image_shape'])  
+        #image_tile_summary('recons',decoder_likelihood.mean(), rows=4, cols=4, shape=params['image_shape'])
+        #image_tile_summary('samples',decoded_samples, rows=4, cols=4, shape=params['image_shape'])  
+        
+        print(features)
+        neg_log_likeli  = - decoder_likelihood.log_prob(features)
+        avg_log_likeli  = tf.reduce_mean(input_tensor=neg_log_likeli)
 
-    neg_log_likeli  = - decoder_likelihood.log_prob(features)
-    avg_log_likeli  = tf.reduce_mean(input_tensor=neg_log_likeli)
-
-    kl             = tfd.kl_divergence(approx_posterior, prior)
-    avg_kl         = tf.reduce_mean(kl)
+        kl             = tfd.kl_divergence(approx_posterior, prior)
+        avg_kl         = tf.reduce_mean(kl)
   
-    elbo           = -(avg_kl+avg_log_likeli)
+        elbo           = -(avg_kl+avg_log_likeli)
   
-    tf.summary.scalar("elbo", elbo)
-    tf.summary.scalar("log_likelihood", avg_log_likeli)
-    tf.summary.scalar("kl_divergence", avg_kl)
+        tf.summary.scalar("elbo", elbo)
+        tf.summary.scalar("log_likelihood", avg_log_likeli)
+        tf.summary.scalar("kl_divergence", avg_kl)
 
-    loss          = -elbo
+        loss          = -elbo
   
-    global_step   = tf.train.get_or_create_global_step()
-    learning_rate = tf.train.cosine_decay(params["learning_rate"], global_step, params["max_steps"])
-    optimizer     = tf.train.AdamOptimizer(learning_rate)
+        global_step   = tf.train.get_or_create_global_step()
+        learning_rate = tf.train.cosine_decay(params["learning_rate"], global_step, params["max_steps"])
+        optimizer     = tf.train.AdamOptimizer(learning_rate)
 
-    tf.summary.scalar('learning_rate',learning_rate)
+        tf.summary.scalar('learning_rate',learning_rate)
 
-    train_op = optimizer.minimize(loss, global_step=global_step)
+        train_op = optimizer.minimize(loss, global_step=global_step)
   
-    eval_metric_ops={
-        'elbo': tf.metrics.mean(elbo),
-        'negative_log_likelihood': tf.metrics.mean(avg_log_likeli),
-        'kl_divergence': tf.metrics.mean(avg_kl)
-    }
-  
-    predictions = {'code': approx_posterior.mean()}
+        eval_metric_ops={
+            'elbo': tf.metrics.mean(elbo),
+            'negative_log_likelihood': tf.metrics.mean(avg_log_likeli),
+            'kl_divergence': tf.metrics.mean(avg_kl)
+        }
+
+        return tf.estimator.EstimatorSpec(mode=mode, loss=loss, train_op=train_op, eval_metric_ops = eval_metric_ops)
+    else:
+        predictions = {'code': approx_posterior.mean()}
     
-    return tf.estimator.EstimatorSpec(mode=mode, loss=loss, train_op=train_op, predictions=predictions, eval_metric_ops = eval_metric_ops)
+        return tf.estimator.EstimatorSpec(mode=mode,predictions=predictions)

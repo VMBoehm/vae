@@ -12,6 +12,7 @@ from absl import flags
 import numpy as np
 import functools
 import os
+import pickle as pkl
 
 # tensorflow packages
 import tensorflow as tf
@@ -21,9 +22,9 @@ import vae.create_datasets as crd
 from  vae.model import model_fn
 
 
-flags.DEFINE_string('model_dir', default='./model', help='directory for storing the model')
+flags.DEFINE_string('model_dir', default=os.path.join(os.path.abspath('./'),'model'), help='directory for storing the model (absolute path)')
 flags.DEFINE_string('data_set', default='mnist', help='the tensorflow-dataset to load')
-flags.DEFINE_string('module_dir', default='./modules', help='directory to which to export the modules')
+flags.DEFINE_string('module_dir', default=os.path.join(os.path.abspath('./'),'modules'), help='directory to which to export the modules (absolute path)')
 
 flags.DEFINE_float('learning_rate', default=1e-3, help='learning rate')    
 flags.DEFINE_integer('batch_size',default=32, help='batch size')
@@ -62,9 +63,14 @@ def main(argv):
     
     for dd in ['model_dir', 'module_dir']:
         if not os.path.isdir(params[dd]):
-            os.makedirs(params[dd])
-			
-	
+            print(params[dd])
+            os.makedirs(params[dd], exist_ok=True)
+
+    if not os.path.isdir('./params'):
+        os.makedirs('./params')
+
+    pkl.dump(params, open('./params/params_%s_%d.pkl'%(params['likelihood'],params['class_label']),'wb'))
+
     train_input_fn, eval_input_fn = crd.build_input_fns(params['data_set'], params['batch_size'],label=FLAGS.class_label)
 
     estimator = tf.estimator.Estimator(model_fn, params=params, config=tf.estimator.RunConfig(model_dir=params['model_dir']),)

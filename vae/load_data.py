@@ -5,8 +5,12 @@ import os, shutil, re, string, urllib, fnmatch
 import pickle as pkl
 import numpy as np
 import sys
-sys.path.append('../fashion-mnist/utils/')
-import mnist_reader
+try:
+    sys.path.append('../fashion-mnist/utils/')
+    import mnist_reader
+except:
+    sys.path.append('/home/nessa/Documents/codes/fashion-mnist/utils/')
+    import mnist_reader
 
 def _download_mnist(dataset):
     """

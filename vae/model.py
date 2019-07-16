@@ -58,6 +58,7 @@ def get_likelihood(decoder, likelihood_type, sig):
  
     if likelihood_type=='Gauss':
         sigma = tf.get_variable(name='sigma', initializer=sig)
+        print(sigma.name)
         tf.summary.scalar('sigma', sigma)
         def likelihood(z):
             mean = decoder({'z':z},as_dict=True)['x']
@@ -92,11 +93,11 @@ def model_fn(features, labels, mode, params, config):
         print(approx_posterior_sample)
         decoder_likelihood      = likelihood(approx_posterior_sample)
     
-        #prior_sample    = prior.sample(params['n_samples'])
-        #decoded_samples = likelihood(prior_sample).mean()
+        prior_sample    = prior.sample(params['n_samples'])
+        decoded_samples = likelihood(prior_sample).mean()
 
-        #image_tile_summary('recons',decoder_likelihood.mean(), rows=4, cols=4, shape=params['image_shape'])
-        #image_tile_summary('samples',decoded_samples, rows=4, cols=4, shape=params['image_shape'])  
+        image_tile_summary('recons',decoder_likelihood.mean(), rows=4, cols=4, shape=params['image_shape'])
+        image_tile_summary('samples',decoded_samples, rows=4, cols=4, shape=params['image_shape'])  
         
         print(features)
         neg_log_likeli  = - decoder_likelihood.log_prob(features)

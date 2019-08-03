@@ -16,8 +16,8 @@ def fully_connected_encoder(activation,latent_size):
     def encoder(x):
         with tf.variable_scope('model/encoder', reuse=tf.AUTO_REUSE):
             net = tf.layers.dense(x, 512, name='dense_1', activation=activation)
-            net = tf.layers.dense(net, 384, name='dense_2', activation=activation)
-            net = tf.layers.dense(net, 256, name='dense_3', activation=activation)
+            net = tf.layers.dense(net, 256, name='dense_2', activation=activation)
+            net = tf.layers.dense(net, 128, name='dense_3', activation=activation)
             net = tf.layers.dense(net, 2*latent_size, name='dense_4', activation=None)
         return net
     return encoder 
@@ -26,8 +26,8 @@ def fully_connected_decoder(activation, output_size):
     
     def decoder(z):
         with tf.variable_scope('model/decoder', reuse=tf.AUTO_REUSE):
-            net = tf.layers.dense(z, 256, name='dense_1', activation=activation)
-            net = tf.layers.dense(net, 384, name='dense_2', activation=activation)
+            net = tf.layers.dense(z, 128, name ='dense_1', activation=activation)
+            net = tf.layers.dense(net, 256, name='dense_2', activation=activation)
             net = tf.layers.dense(net, 512, name='dense_3', activation=activation)
             net = tf.layers.dense(net, output_size , name='dense_4', activation=None)
         return net

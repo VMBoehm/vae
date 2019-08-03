@@ -5,13 +5,17 @@ import os, shutil, re, string, urllib, fnmatch
 import pickle as pkl
 import numpy as np
 import sys
-try:
-    sys.path.append('../fashion-mnist/utils/')
-    import mnist_reader
-except:
-    sys.path.append('/home/nessa/Documents/codes/fashion-mnist/utils/')
-    import mnist_reader
 
+try:
+    try:
+        sys.path.append('../fashion-mnist/utils/')
+        import mnist_reader
+    except:
+        sys.path.append('/home/nessa/Documents/codes/fashion-mnist/utils/')
+        import mnist_reader
+except:
+    print('did not import fashion mnist reader')
+        
 def _download_mnist(dataset):
     """
     download mnist dataset if not present

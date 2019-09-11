@@ -10,17 +10,20 @@ retrieve_data.py
 import vae.load_data as ld
 import tensorflow as tf
 import numpy as np
+import os
+import tensorflow_datasets as tfds
+from functools import partial
 
 load_funcs=dict(mnist=ld.load_mnist, fmnist=ld.load_fmnist, cifar10=ld.load_cifar10)
 
-def build_input_fns(data_type,batch_size,label):
+def build_input_fns(data_type,batch_size,label,flatten):
     """Builds an iterator switching between train and heldout data."""
 
     print('loading %s dataset'%data_type)
 
-    load_func = load_funcs[data_type]
+    load_func = partial(load_funcs[data_type])
     # these guys are already flattened
-    x_train, y_train, x_test,y_test = load_func()
+    x_train, y_train, x_test,y_test = load_func(flatten)
     num_classes = len(np.unique(y_train))
 
     if label in np.arange(num_classes):
@@ -53,3 +56,38 @@ def build_input_fns(data_type,batch_size,label):
         return tf.compat.v1.data.make_one_shot_iterator(testset).get_next()
 
     return train_input_fn, eval_input_fn
+
+
+def build_input_fn_celeba(params):
+    """
+    Creates input functions for training, validation, and testing
+    """
+
+    def input_fn(is_training=False, tag='train', shuffle_buffer=10000):
+
+        data_dir = os.path.join(ld._get_datafolder_path(),'celeba/')
+
+        if not os.path.isdir(data_dir):
+            os.makedirs(data_dir)
+
+        data = tfds.load("celeb_a", with_info=False, data_dir=data_dir)
+
+        dset = data[tag]
+        # Crop celeb image and resize
+        dset = dset.map(lambda x: tf.cast(tf.image.resize_image_with_crop_or_pad(x['image'], 128, 128), tf.float32) / 256.)
+
+        if is_training:
+            dset = dset.repeat()
+            dset = dset.map(lambda x: tf.image.random_flip_left_right(x),num_parallel_calls=2)
+            dset = dset.shuffle(buffer_size=shuffle_buffer)
+
+        dset = dset.batch(params['batch_size'])
+        dset = dset.map(lambda x: tf.image.resize_bilinear(x, (64, 64)),num_parallel_calls=2)
+        dset = dset.prefetch(params['batch_size'])
+        return dset
+
+        return input_fn
+
+    return {'train':partial(input_fn, tag='train', is_training=True),
+            'validation': partial(input_fn, tag='validation'),
+            'test': partial(input_fn, tag='test')}

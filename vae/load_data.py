@@ -41,7 +41,7 @@ def _get_datafolder_path():
     return path
 
 
-def load_mnist():
+def load_mnist(flatten=True):
     """
     load mnist dataset
     """
@@ -58,10 +58,17 @@ def load_mnist():
     f = gzip.open(dataset, 'rb')
     train_set, valid_set, test_set = pkl.load(f, encoding='latin1')
     f.close()
-    x_train, targets_train = train_set[0], train_set[1]
-    x_valid, targets_valid = valid_set[0], valid_set[1]
-    x_test, targets_test = test_set[0], test_set[1]
-    #omitting validation set for consistency
+
+    if flatten:
+        x_train, targets_train = train_set[0], train_set[1]
+        x_valid, targets_valid = valid_set[0], valid_set[1]
+        x_test,  targets_test  = test_set[0], test_set[1]
+    else:
+        x_train, targets_train = train_set[0].reshape((-1,28,28,1)), train_set[1]
+        x_valid, targets_valid = valid_set[0].reshape((-1,28,28,1)), valid_set[1]
+        x_test,  targets_test  = test_set[0].reshape((-1,28,28,1)), test_set[1]
+
+        #omitting validation set for consistency
     return x_train, targets_train, x_test, targets_test
 
 
@@ -75,12 +82,9 @@ def load_fmnist():
 
 
 def reshape_cifar(x):
-
     x = x.reshape([-1, 3, 32, 32])
     x = x.transpose([0, 2, 3, 1])
     return x.reshape(-1,3*32*32)
-
-
 
 def load_cifar10():
     """   

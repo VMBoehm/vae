@@ -34,7 +34,9 @@ flags.DEFINE_integer('n_steps', default=500, help='number of training steps afte
 flags.DEFINE_integer('latent_size',default=8, help='dimensionality of latent space')
 flags.DEFINE_string('activation', default='leaky_relu', help='activation function')
 flags.DEFINE_integer('n_samples', default=16, help='number of samples for encoding')
-flags.DEFINE_string('network_type', default='fully_connected', help='whichy type of network to use')
+flags.DEFINE_string('network_type', default='fully_connected', help='which type of network to use, currently supported: fully_conneted and conv')
+flags.DEFINE_integer('n_filt',default=64,help='number of filters to use in the first convolutional layer')
+flags.DEFINE_boolean('bias', default=False, help='whether to use a bias in the convolutions')
 
 flags.DEFINE_string('likelihood', default='Bernoulli', help='form of likelihood')
 flags.DEFINE_float('sigma', default=0.1, help='noise scale used in the Gaussian likelihood')
@@ -42,7 +44,7 @@ flags.DEFINE_integer('class_label', default=-1, help='number of specific class t
 
 FLAGS = flags.FLAGS
 
-IMAGE_SHAPES = dict(mnist=[28,28,1],fmnist=[28,28,1],cifar10=[32,32,3])
+IMAGE_SHAPES = dict(mnist=[28,28,1],fmnist=[28,28,1],cifar10=[32,32,3],celeba=[64,64,3])
 
 def main(argv):
     del argv
@@ -50,16 +52,22 @@ def main(argv):
     params = FLAGS.flag_values_dict()
     IMAGE_SHAPE = IMAGE_SHAPES[FLAGS.data_set]
 
-    params['output_size'] = np.prod(IMAGE_SHAPE)
     params['activation']  = getattr(tf.nn, params['activation'])
     params['width']       = IMAGE_SHAPE[0]
     params['height']      = IMAGE_SHAPE[1]
     params['n_channels']  = IMAGE_SHAPE[2]
     params['image_shape'] = IMAGE_SHAPE
 
+    flatten = True
+    params['output_size'] = np.prod(IMAGE_SHAPE)
 
-    params['model_dir']   = os.path.join(params['model_dir'], '%s'%params['data_set'], '%s'%params['likelihood'], 'class%d'%params['class_label'])
-    params['module_dir']   = os.path.join(params['module_dir'], '%s'%params['data_set'], '%s'%params['likelihood'], 'class%d'%params['class_label'])
+    if params['network_type']=='conv':
+        flatten = False
+        params['output_size'] = IMAGE_SHAPE
+
+
+    params['model_dir']   = os.path.join(params['model_dir'], '%s'%params['data_set'], '%s'%params['likelihood'], 'class%d'%params['class_label'], 'net_type_%s'%params['network_type'])
+    params['module_dir']   = os.path.join(params['module_dir'], '%s'%params['data_set'], '%s'%params['likelihood'], 'class%d'%params['class_label'],'net_type_%s'%params['network_type'])
     
     for dd in ['model_dir', 'module_dir']:
         if not os.path.isdir(params[dd]):
@@ -71,11 +79,16 @@ def main(argv):
 
     pkl.dump(params, open('./params/params_%s_%d.pkl'%(params['likelihood'],params['class_label']),'wb'))
 
-    train_input_fn, eval_input_fn = crd.build_input_fns(params['data_set'], params['batch_size'],label=FLAGS.class_label)
+    if params['data_set']=='celeba':
+        input_fns      = crd.build_input_fn_celeba(params)
+        train_input_fn = input_fns['train']
+        eval_input_fn  = input_fns['validation']
+    else:
+        train_input_fn, eval_input_fn = crd.build_input_fns(params['data_set'], params['batch_size'],label=FLAGS.class_label,flatten=flatten)
 
     estimator = tf.estimator.Estimator(model_fn, params=params, config=tf.estimator.RunConfig(model_dir=params['model_dir']),)
-
-    c = tf.placeholder(tf.float32,[params['batch_size'],params['output_size']])
+    print([params['batch_size']].append(params['output_size']))
+    c = tf.placeholder(tf.float32,[params['batch_size']].append(params['output_size']))
     serving_input_fn = tf.estimator.export.build_raw_serving_input_receiver_fn(features=dict(x=c))
 
     #train_spec = tf.estimator.TrainSpec(input_fn=train_input_fn, max_steps=params['max_steps'])

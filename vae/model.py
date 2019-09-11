@@ -75,10 +75,11 @@ def model_fn(features, labels, mode, params, config):
     except:
         pass
 
-    #putting fully connected stuff for mnist here, but should be generalized
-    encoder      = nw.make_encoder(params['activation'], params['output_size'],params['latent_size'], params['network_type'])
-    decoder      = nw.make_decoder(params['activation'], params['output_size'],params['latent_size'], params['network_type'])
+    is_training = (mode == tf.estimator.ModeKeys.TRAIN)
 
+    #putting fully connected stuff for mnist here, but should be generalized
+    encoder      = nw.make_encoder(params, is_training)
+    decoder      = nw.make_decoder(params, is_training)
 
     posterior               = get_posterior(encoder)
     approx_posterior        = posterior(features)
@@ -90,7 +91,6 @@ def model_fn(features, labels, mode, params, config):
         image_tile_summary('inputs',features, rows=4, cols=4, shape=params['image_shape'])
 
         approx_posterior_sample = approx_posterior.sample()
-        print(approx_posterior_sample)
         decoder_likelihood      = likelihood(approx_posterior_sample)
     
         prior_sample    = prior.sample(params['n_samples'])
@@ -99,7 +99,6 @@ def model_fn(features, labels, mode, params, config):
         image_tile_summary('recons',decoder_likelihood.mean(), rows=4, cols=4, shape=params['image_shape'])
         image_tile_summary('samples',decoded_samples, rows=4, cols=4, shape=params['image_shape'])  
         
-        print(features)
         neg_log_likeli  = - decoder_likelihood.log_prob(features)
         avg_log_likeli  = tf.reduce_mean(input_tensor=neg_log_likeli)
 

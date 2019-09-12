@@ -31,7 +31,6 @@ def conv_encoder(activation ,latent_size, n_filt, bias, dataset, is_training=Tru
 
             net = tf.layers.flatten(net) #8x8*n_filt*4
             net = tf.layers.dense(net, latent_size*2, activation=None)
-            print(net)
             return net
 
     return encoder
@@ -59,7 +58,6 @@ def conv_decoder(activation, latent_size, output_size, n_filt, bias, dataset, is
             net = activation(net)
 
             net = tf.layers.conv2d_transpose(net, output_size[-1], kernel_size=4, strides=1, activation=None, padding='same', name='output_layer')# bring to correct number of channels
-            print(net)
 		
         return net
 

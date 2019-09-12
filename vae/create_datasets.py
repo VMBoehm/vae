@@ -52,7 +52,7 @@ def build_input_fns(data_type,batch_size,label,flatten):
 
     def eval_input_fn():
         test_dataset  = tf.data.Dataset.from_tensor_slices((x_test,y_test))
-        testset = test_dataset.shuffle(max(test_sample_size,10000)).batch(batch_size)
+        testset = test_dataset.shuffle(max(test_sample_size,10000)).batch(batch_size,drop_remainder=True)
         return tf.compat.v1.data.make_one_shot_iterator(testset).get_next()
 
     return train_input_fn, eval_input_fn

@@ -71,6 +71,7 @@ def load_mnist(flatten=True):
         x_train, targets_train = train_set[0].reshape((-1,28,28,1)), train_set[1]
         x_valid, targets_valid = valid_set[0].reshape((-1,28,28,1)), valid_set[1]
         x_test,  targets_test  = test_set[0].reshape((-1,28,28,1)), test_set[1]
+    print('training shape', x_train.shape)
 
         #omitting validation set for consistency
     return x_train, targets_train, x_test, targets_test

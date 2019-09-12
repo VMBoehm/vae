@@ -86,6 +86,7 @@ def main(argv):
         train_input_fn = input_fns['train']
         eval_input_fn  = input_fns['validation']
     else:
+        print('here')
         train_input_fn, eval_input_fn = crd.build_input_fns(params['data_set'], params['batch_size'],label=FLAGS.class_label,flatten=flatten)
 
     estimator = tf.estimator.Estimator(model_fn, params=params, config=tf.estimator.RunConfig(model_dir=params['model_dir']),)

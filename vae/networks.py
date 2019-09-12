@@ -14,7 +14,7 @@ import tensorflow_hub as hub
 def conv_encoder(activation ,latent_size, n_filt, bias, dataset, is_training=True):
 
     def encoder(x):
-        with tf.variable_scope('model/encoder', reuse=tf.AUTO_REUSE):
+        with tf.variable_scope('model/encoder',['x'], reuse=tf.AUTO_REUSE):
 
             net = tf.layers.conv2d(x,n_filt,5,strides=2,activation=None, padding='SAME', use_bias=bias) #64x64 -> 32x32/ 28x28 -> 14x14
             net = tf.layers.batch_normalization(net, training=is_training)
@@ -24,15 +24,14 @@ def conv_encoder(activation ,latent_size, n_filt, bias, dataset, is_training=Tru
             net = tf.layers.batch_normalization(net, training=is_training)
             net = activation(net)
 
+            #if dataset == 'celeba':
+            #    net = tf.layers.conv2d(net, n_filt*4, 5, 2, activation=None, padding='SAME', use_bias=bias) #16x16 -> 8x8 
+            #    net = tf.layers.batch_normalization(net, training=is_training)
+            #    net = activation(net)
 
-            if dataset == 'celeba':
-                net = tf.layers.conv2d(net, n_filt*4, 5, 2, activation=None, padding='SAME', use_bias=bias) #16x16 -> 8x8 
-                net = tf.layers.batch_normalization(net, training=is_training)
-                net = activation(net)
-
-            net = tf.reshape(tf.layers.flatten(net), (-1, 2*latent_size)) #8x8*n_filt*4
+            net = tf.layers.flatten(net) #8x8*n_filt*4
             net = tf.layers.dense(net, latent_size*2, activation=None)
-
+            print(net)
             return net
 
     return encoder
@@ -41,32 +40,27 @@ def conv_encoder(activation ,latent_size, n_filt, bias, dataset, is_training=Tru
 def conv_decoder(activation, latent_size, output_size, n_filt, bias, dataset, is_training=True):
 
     def decoder(z):
-        with tf.variable_scope('model/decoder', reuse=tf.AUTO_REUSE):
+        with tf.variable_scope('model/decoder',['z'], reuse=tf.AUTO_REUSE):
 
             if dataset in ['celeba','cifar10']:
                 NN = 8
             elif dataset in ['mnist','fmnist']: 
                 NN = 7
 
-            
             net = tf.layers.dense(z,n_filt*4*NN*NN,activation=activation, use_bias=bias)
-            print(net)
-            net = tf.reshape(net, [-1, NN, NN, n_filt*4])
-            print(net)
-            net = tf.layers.conv2d_transpose(net,n_filt*4, 5, strides=2, padding='SAME', use_bias=bias) # output_size 16x16/14x14
+            net = tf.reshape(net, [32, NN, NN,n_filt*4])
+
+            net = tf.layers.conv2d_transpose(net,n_filt*2, 5, strides=2, padding='SAME', use_bias=bias) # output_size 16x16/14x14 
             net = tf.layers.batch_normalization(net, training=is_training)
             net = activation(net)
 
-            net = tf.layers.conv2d_transpose(net,n_filt*2, 5, strides=2, padding='SAME', use_bias=bias) # output_size 32x32/28x28
+            net = tf.layers.conv2d_transpose(net, n_filt, 5, strides=2, padding='SAME', use_bias=bias) # output_size 32x32/28x28
             net = tf.layers.batch_normalization(net, training=is_training)
             net = activation(net)
-            if dataset == 'celeba':
-                net = tf.layers.conv2d_transpose(net,n_filt, 5, strides=2, padding='SAME', use_bias=bias) # output_size 64x64
-                net = tf.layers.batch_normalization(net, training=is_training)
-                net = activation(net)
 
-            net = tf.layers.conv2d_transpose(net, output_size[-1], kernel_size=4, activation=None, padding='same', name='ouput_layer')# bring to correct number of channels
-
+            net = tf.layers.conv2d_transpose(net, output_size[-1], kernel_size=4, strides=1, activation=None, padding='same', name='output_layer')# bring to correct number of channels
+            print(net)
+		
         return net
 
     return decoder
@@ -106,7 +100,7 @@ def make_encoder(params, is_training):
         raise NotImplementedError("Network type not implemented.")
 
     def encoder_spec():
-        x = tf.placeholder(tf.float32, shape=[None,params['output_size'][0],params['output_size'][1],params['output_size'][2]])
+        x = tf.placeholder(tf.float32, shape=params['full_size'])
         z = encoder_(x)
         hub.add_signature(inputs={'x':x},outputs={'z':z})
 

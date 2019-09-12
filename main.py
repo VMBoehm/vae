@@ -60,10 +60,12 @@ def main(argv):
 
     flatten = True
     params['output_size'] = np.prod(IMAGE_SHAPE)
+    params['full_size'] = [params['batch_size'],params['output_size']] 
 
     if params['network_type']=='conv':
         flatten = False
         params['output_size'] = IMAGE_SHAPE
+        params['full_size'] = [params['batch_size'],params['width'],params['height'],params['n_channels']]
 
 
     params['model_dir']   = os.path.join(params['model_dir'], '%s'%params['data_set'], '%s'%params['likelihood'], 'class%d'%params['class_label'], 'net_type_%s'%params['network_type'])
@@ -87,8 +89,7 @@ def main(argv):
         train_input_fn, eval_input_fn = crd.build_input_fns(params['data_set'], params['batch_size'],label=FLAGS.class_label,flatten=flatten)
 
     estimator = tf.estimator.Estimator(model_fn, params=params, config=tf.estimator.RunConfig(model_dir=params['model_dir']),)
-    print([params['batch_size']].append(params['output_size']))
-    c = tf.placeholder(tf.float32,[params['batch_size']].append(params['output_size']))
+    c = tf.placeholder(tf.float32,params['full_size'])
     serving_input_fn = tf.estimator.export.build_raw_serving_input_receiver_fn(features=dict(x=c))
 
     #train_spec = tf.estimator.TrainSpec(input_fn=train_input_fn, max_steps=params['max_steps'])
@@ -108,4 +109,4 @@ def main(argv):
     return True
 
 if __name__ == "__main__":
-  tf.compat.v1.app.run()
+  tf.app.run()

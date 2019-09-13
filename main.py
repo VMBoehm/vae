@@ -21,10 +21,10 @@ import tensorflow_hub as hub
 import vae.create_datasets as crd
 from  vae.model import model_fn
 
-
 flags.DEFINE_string('model_dir', default=os.path.join(os.path.abspath('./'),'model'), help='directory for storing the model (absolute path)')
 flags.DEFINE_string('data_set', default='mnist', help='the tensorflow-dataset to load')
 flags.DEFINE_string('module_dir', default=os.path.join(os.path.abspath('./'),'modules'), help='directory to which to export the modules (absolute path)')
+flags.DEFINE_string('data_dir', default=os.path.join(os.path.abspath('./'),'data'), help='directory to store the data')
 
 flags.DEFINE_float('learning_rate', default=1e-3, help='learning rate')    
 flags.DEFINE_integer('batch_size',default=32, help='batch size')
@@ -71,7 +71,7 @@ def main(argv):
     params['model_dir']   = os.path.join(params['model_dir'], '%s'%params['data_set'], '%s'%params['likelihood'], 'class%d'%params['class_label'], 'net_type_%s'%params['network_type'])
     params['module_dir']   = os.path.join(params['module_dir'], '%s'%params['data_set'], '%s'%params['likelihood'], 'class%d'%params['class_label'],'net_type_%s'%params['network_type'])
     
-    for dd in ['model_dir', 'module_dir']:
+    for dd in ['model_dir', 'module_dir', 'data_dir']:
         if not os.path.isdir(params[dd]):
             print(params[dd])
             os.makedirs(params[dd], exist_ok=True)
@@ -86,8 +86,7 @@ def main(argv):
         train_input_fn = input_fns['train']
         eval_input_fn  = input_fns['validation']
     else:
-        print('here')
-        train_input_fn, eval_input_fn = crd.build_input_fns(params['data_set'], params['batch_size'],label=FLAGS.class_label,flatten=flatten)
+        train_input_fn, eval_input_fn = crd.build_input_fns(params['data_dir'],params['data_set'], params['batch_size'],label=FLAGS.class_label,flatten=flatten)
 
     estimator = tf.estimator.Estimator(model_fn, params=params, config=tf.estimator.RunConfig(model_dir=params['model_dir']),)
     c = tf.placeholder(tf.float32,params['full_size'])

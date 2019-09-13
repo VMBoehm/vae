@@ -45,12 +45,12 @@ def _get_datafolder_path():
     return path
 
 
-def load_mnist(flatten=True):
+def load_mnist(data_dir,flatten=True):
     """
     load mnist dataset
     """
 
-    dataset=_get_datafolder_path()+'/mnist/mnist.pkl.gz'
+    dataset=os.path.join(data_dir,'mnist/mnist.pkl.gz')
 
     if not os.path.isfile(dataset):
         datasetfolder = os.path.dirname(dataset)
@@ -65,38 +65,40 @@ def load_mnist(flatten=True):
 
     if flatten:
         x_train, targets_train = train_set[0], train_set[1]
-        x_valid, targets_valid = valid_set[0], valid_set[1]
         x_test,  targets_test  = test_set[0], test_set[1]
     else:
         x_train, targets_train = train_set[0].reshape((-1,28,28,1)), train_set[1]
-        x_valid, targets_valid = valid_set[0].reshape((-1,28,28,1)), valid_set[1]
         x_test,  targets_test  = test_set[0].reshape((-1,28,28,1)), test_set[1]
-    print('training shape', x_train.shape)
 
-        #omitting validation set for consistency
     return x_train, targets_train, x_test, targets_test
 
 
-def load_fmnist():
+def load_fmnist(data_dir,flatten=True):
     
     x_train, y_train = mnist_reader.load_mnist('./data/fashion', kind='train')
-    x_test, y_test = mnist_reader.load_mnist('./data/fashion', kind='t10k')
+    x_test, y_test   = mnist_reader.load_mnist('./data/fashion', kind='t10k')
     x_train = x_train/255.
     x_test  = x_test/255.
+    if not flatten:
+        x_train = x_train.reshape((-1,28,28,1))
+        x_test  = x_test.reshape((-1,28,28,1))
+
     return x_train, y_train, x_test, y_test
 
 
-def reshape_cifar(x):
+def reshape_cifar(x,flatten):
     x = x.reshape([-1, 3, 32, 32])
     x = x.transpose([0, 2, 3, 1])
-    return x.reshape(-1,3*32*32)
+    if flatten:
+        x.reshape(-1,3*32*32)
+    return x
 
-def load_cifar10():
+def load_cifar10(data_dir,flatten=True):
     """   
     load cifar10 dataset
     """
 
-    dataset=_get_datafolder_path()+'/cifar10/cifar-10-python.tar.gz'
+    dataset = os.path.join(data_dir+'/cifar10/cifar-10-python.tar.gz')
 
     datasetfolder = os.path.dirname(dataset)
     if not os.path.isfile(dataset):
@@ -129,8 +131,8 @@ def load_cifar10():
         test_x = data
         test_y = np.asarray(label)
 
-    train_x = reshape_cifar(train_x)
-    test_x  = reshape_cifar(test_x)
+    train_x = reshape_cifar(train_x,flatten)
+    test_x  = reshape_cifar(test_x,flatten)
     return train_x, train_y, test_x, test_y
 
 

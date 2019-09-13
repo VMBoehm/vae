@@ -16,14 +16,14 @@ from functools import partial
 
 load_funcs=dict(mnist=ld.load_mnist, fmnist=ld.load_fmnist, cifar10=ld.load_cifar10)
 
-def build_input_fns(data_type,batch_size,label,flatten):
+def build_input_fns(data_dir,data_type,batch_size,label,flatten):
     """Builds an iterator switching between train and heldout data."""
 
     print('loading %s dataset'%data_type)
 
     load_func = partial(load_funcs[data_type])
     # these guys are already flattened
-    x_train, y_train, x_test,y_test = load_func(flatten)
+    x_train, y_train, x_test,y_test = load_func(data_dir,flatten)
     num_classes = len(np.unique(y_train))
 
     if label in np.arange(num_classes):
@@ -65,7 +65,7 @@ def build_input_fn_celeba(params):
 
     def input_fn(is_training=False, tag='train', shuffle_buffer=10000):
 
-        data_dir = os.path.join(ld._get_datafolder_path(),'celeba/')
+        data_dir = os.path.join(params['data_dir'],'celeba/')
 
         if not os.path.isdir(data_dir):
             os.makedirs(data_dir)

@@ -46,13 +46,13 @@ def build_input_fns(data_type,batch_size,label,flatten):
 
     def train_input_fn():
         train_dataset = tf.data.Dataset.from_tensor_slices((x_train,y_train))
-        trainset = train_dataset.shuffle(max(train_sample_size,10000)).repeat().batch(batch_size)
+        trainset = train_dataset.shuffle(max(train_sample_size,10000)).repeat().batch(batch_size,drop_remainder=True)
         iterator = tf.compat.v1.data.make_one_shot_iterator(trainset)
         return iterator.get_next()
 
     def eval_input_fn():
         test_dataset  = tf.data.Dataset.from_tensor_slices((x_test,y_test))
-        testset = test_dataset.shuffle(max(test_sample_size,10000)).batch(batch_size)
+        testset = test_dataset.shuffle(max(test_sample_size,10000)).batch(batch_size,drop_remainder=True)
         return tf.compat.v1.data.make_one_shot_iterator(testset).get_next()
 
     return train_input_fn, eval_input_fn
@@ -81,7 +81,7 @@ def build_input_fn_celeba(params):
             dset = dset.map(lambda x: tf.image.random_flip_left_right(x),num_parallel_calls=2)
             dset = dset.shuffle(buffer_size=shuffle_buffer)
 
-        dset = dset.batch(params['batch_size'])
+        dset = dset.batch(params['batch_size'],drop_remainder=True)
         dset = dset.map(lambda x: tf.image.resize_bilinear(x, (64, 64)),num_parallel_calls=2)
         dset = dset.prefetch(params['batch_size'])
         return dset

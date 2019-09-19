@@ -62,6 +62,7 @@ def get_likelihood(decoder, likelihood_type, sig):
 
         def likelihood(z):
             mean = decoder({'z':z},as_dict=True)['x']
+            print('mean', mean)
             return tfd.Independent(tfd.MultivariateNormalDiag(loc=mean,scale_identity_multiplier=sigma))
 
     return likelihood
@@ -90,11 +91,13 @@ def model_fn(features, labels, mode, params, config):
         image_tile_summary('inputs',features, rows=4, cols=4, shape=params['image_shape'])
 
         approx_posterior_sample = approx_posterior.sample()
+        print('post sample', approx_posterior_sample)
         decoder_likelihood      = likelihood(approx_posterior_sample)
-
+        print('decoded sample', decoder_likelihood)
         prior_sample    = prior.sample(params['batch_size'])
+        print('prior sample', prior_sample)
         decoded_samples = likelihood(prior_sample).mean()
-
+        print('decoded samples', decoded_samples)
         image_tile_summary('recons',decoder_likelihood.mean(), rows=4, cols=4, shape=params['image_shape'])
         image_tile_summary('samples',decoded_samples, rows=4, cols=4, shape=params['image_shape'])  
        

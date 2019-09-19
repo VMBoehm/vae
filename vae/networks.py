@@ -49,7 +49,7 @@ def conv_decoder(activation, latent_size, output_size, n_filt, bias, dataset, is
             print('input z', z)
             net = tf.layers.dense(z,n_filt*4*NN*NN,activation=activation, use_bias=bias)
             print('input reshape', net)
-            net = tf.reshape(net, [32, NN, NN,n_filt*4])
+            net = tf.reshape(net, [-1, NN, NN,n_filt*4])
             print('output reshape', net)
 
             if dataset in ['celeba']:

@@ -41,18 +41,37 @@ def build_input_fns(data_dir,data_type,batch_size,label,flatten):
     train_sample_size = len(x_train)
     test_sample_size  = len(x_test)
 
-    x_train = x_train.astype(np.float32)
-    x_test  = x_test.astype(np.float32)
+    x_train  = x_train.astype(np.float32)
+    shape    = [batch_size]+[ii for ii in x_train.shape[1:]]
+    x_test   = x_test.astype(np.float32)
+
+
 
     def train_input_fn():
-        train_dataset = tf.data.Dataset.from_tensor_slices((x_train,y_train))
-        trainset = train_dataset.shuffle(max(train_sample_size,10000)).repeat().batch(batch_size,drop_remainder=True)
+        def mapping_function(x):
+            def extract_images(inds):
+                return x_train[inds]
+            xx = tf.py_func(extract_images,[x],tf.float32)
+            xx.set_shape(shape)
+            return xx
+
+        train_dataset  = tf.data.Dataset.range(train_sample_size)
+        trainset       = train_dataset.shuffle(max(train_sample_size,10000)).repeat().batch(batch_size,drop_remainder=True)
+        trainset       = trainset.map(mapping_function) 
         iterator = tf.compat.v1.data.make_one_shot_iterator(trainset)
         return iterator.get_next()
 
     def eval_input_fn():
-        test_dataset  = tf.data.Dataset.from_tensor_slices((x_test,y_test))
-        testset = test_dataset.shuffle(max(test_sample_size,10000)).batch(batch_size,drop_remainder=True)
+        def mapping_function(x):
+            def extract_images(inds):
+                return x_test[inds]
+            xx = tf.py_func(extract_images,[x],tf.float32)
+            xx.set_shape(shape)
+            return xx
+
+        test_dataset  = tf.data.Dataset.range(test_sample_size)
+        testset       = test_dataset.shuffle(max(test_sample_size,10000)).batch(batch_size,drop_remainder=True)
+        testset       = testset.map(mapping_function)
         return tf.compat.v1.data.make_one_shot_iterator(testset).get_next()
 
     return train_input_fn, eval_input_fn

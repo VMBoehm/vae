@@ -17,7 +17,7 @@ import vae.networks as nw
 
 def pack_images(images, rows, cols,shape):
     """Helper utility to make a field of images.
-    Borrowed from Tensorflow Probability
+    todo: does that suppoty color images?
     """
     width  = shape[-3]
     height = shape[-2]
@@ -32,8 +32,18 @@ def pack_images(images, rows, cols,shape):
     images = tf.clip_by_value(tf.reshape(images, [1, rows * width, cols * height, depth]), 0, 1)
     return images
 
+def pack_sn_lightcurves(curves,shape):
+    """rescale to audio format"""
+    rows = tf.minimum(tf.shape(normed_curves)[0],32)
+    images = 0 
+    return normed_curves
+
 def image_tile_summary(name, tensor, rows, cols, shape):
     tf.summary.image(name, pack_images(tensor, rows, cols, shape), max_outputs=1)
+
+def spectrum_tile_summary(name,tensor,shape):
+    pass
+    #tf.summary.audio(name,pack_sn_lightcurves(tensor,shape),sample_rate=1)
 
 #############
 
@@ -57,8 +67,10 @@ def get_likelihood(decoder, likelihood_type, sig):
             return tfd.Independent(tfd.Bernoulli(logits=decoder({'z':z},as_dict=True)['x']))
  
     if likelihood_type=='Gauss':
-        sigma = tf.get_variable(name='sigma', initializer=sig)
-        tf.summary.scalar('sigma', sigma)
+
+        with tf.variable_scope("likelihood", reuse=tf.AUTO_REUSE):
+            sigma = tf.get_variable(name='sigma', initializer=sig)
+            tf.summary.scalar('sigma', sigma)
 
         def likelihood(z):
             mean = decoder({'z':z},as_dict=True)['x']
@@ -88,14 +100,23 @@ def model_fn(features, labels, mode, params, config):
         prior        = get_prior(params['latent_size'])
         likelihood   = get_likelihood(decoder, params['likelihood'], params['sigma'])
 
-        image_tile_summary('inputs',features, rows=4, cols=4, shape=params['image_shape'])
+        if params['data_set']=='sn': 
+            spectrum_tile_summary('inputs',features,shape=params['data_shape'])
+        else:
+            image_tile_summary('inputs',features, rows=4, cols=4, shape=params['data_shape'])
 
         approx_posterior_sample = approx_posterior.sample()
         decoder_likelihood      = likelihood(approx_posterior_sample)
-        prior_sample    = prior.sample(params['batch_size'])
-        decoded_samples = likelihood(prior_sample).mean()
-        image_tile_summary('recons',decoder_likelihood.mean(), rows=4, cols=4, shape=params['image_shape'])
-        image_tile_summary('samples',decoded_samples, rows=4, cols=4, shape=params['image_shape'])  
+        prior_sample            = prior.sample(params['batch_size'])
+        decoded_samples         = likelihood(prior_sample).mean()
+
+
+        if params['data_set']=='sn':
+            spectrum_tile_summary('recons',decoder_likelihood.mean(),shape=params['data_shape'])
+            spectrum_tile_summary('samples',decoded_samples,shape=params['data_shape'])
+        else:
+            image_tile_summary('recons',decoder_likelihood.mean(), rows=4, cols=4, shape=params['data_shape'])
+            image_tile_summary('samples',decoded_samples, rows=4, cols=4, shape=params['data_shape'])  
        
         neg_log_likeli  = - decoder_likelihood.log_prob(features)
         avg_log_likeli  = tf.reduce_mean(input_tensor=neg_log_likeli)
@@ -106,7 +127,7 @@ def model_fn(features, labels, mode, params, config):
         elbo           = -(avg_kl+avg_log_likeli)
   
         tf.summary.scalar("elbo", elbo)
-        tf.summary.scalar("log_likelihood", avg_log_likeli)
+        tf.summary.scalar("negative_log_likelihood", avg_log_likeli)
         tf.summary.scalar("kl_divergence", avg_kl)
 
         loss          = -elbo
@@ -118,11 +139,15 @@ def model_fn(features, labels, mode, params, config):
         tf.summary.scalar('learning_rate',learning_rate)
 
         train_op = optimizer.minimize(loss, global_step=global_step)
-  
+ 
+        with tf.variable_scope("likelihood", reuse=tf.AUTO_REUSE):
+            sigma = tf.get_variable(name='sigma')
+
+        
         eval_metric_ops={
             'elbo': tf.metrics.mean(elbo),
             'negative_log_likelihood': tf.metrics.mean(avg_log_likeli),
-            'kl_divergence': tf.metrics.mean(avg_kl)
+            'kl_divergence': tf.metrics.mean(avg_kl),
         }
 
         return tf.estimator.EstimatorSpec(mode=mode, loss=loss, train_op=train_op, eval_metric_ops = eval_metric_ops)

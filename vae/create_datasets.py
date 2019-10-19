@@ -14,7 +14,7 @@ import os
 import tensorflow_datasets as tfds
 from functools import partial
 
-load_funcs=dict(mnist=ld.load_mnist, fmnist=ld.load_fmnist, cifar10=ld.load_cifar10)
+load_funcs=dict(mnist=ld.load_mnist, fmnist=ld.load_fmnist, cifar10=ld.load_cifar10, sn=ld.load_sn_lightcurves)
 
 def build_input_fns(data_dir,data_type,batch_size,label,flatten):
     """Builds an iterator switching between train and heldout data."""
@@ -22,7 +22,6 @@ def build_input_fns(data_dir,data_type,batch_size,label,flatten):
     print('loading %s dataset'%data_type)
 
     load_func = partial(load_funcs[data_type])
-    # these guys are already flattened
     x_train, y_train, x_test,y_test = load_func(data_dir,flatten)
     num_classes = len(np.unique(y_train))
 
@@ -44,7 +43,6 @@ def build_input_fns(data_dir,data_type,batch_size,label,flatten):
     x_train  = x_train.astype(np.float32)
     shape    = [batch_size]+[ii for ii in x_train.shape[1:]]
     x_test   = x_test.astype(np.float32)
-
 
 
     def train_input_fn():

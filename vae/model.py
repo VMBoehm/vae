@@ -15,35 +15,23 @@ import vae.networks as nw
 
 ### these two function are taken from https://github.com/tensorflow/probability/blob/master/tensorflow_probability/examples/vae.py and modified to work with flattened data ny adding a shape keyword
 
-def pack_images(images, rows, cols,shape):
-    """Helper utility to make a field of images.
-    todo: does that suppoty color images?
-    """
+def make_images(images, rows, cols,shape):
     width  = shape[-3]
     height = shape[-2]
     depth  = shape[-1]
     images = tf.reshape(images, (-1, width, height, depth))
-    batch = tf.shape(images)[0]
-    rows = tf.minimum(rows, batch)
-    cols = tf.minimum(batch // rows, cols)
+    batch  = tf.shape(images)[0]
+    rows   = tf.minimum(rows, batch)
+    cols   = tf.minimum(batch // rows, cols)
     images = images[:rows * cols]
     images = tf.reshape(images, (rows, cols, width, height, depth))
     images = tf.transpose(images, [0, 2, 1, 3, 4])
     images = tf.clip_by_value(tf.reshape(images, [1, rows * width, cols * height, depth]), 0, 1)
     return images
 
-def pack_sn_lightcurves(curves,shape):
-    """rescale to audio format"""
-    rows = tf.minimum(tf.shape(normed_curves)[0],32)
-    images = 0 
-    return normed_curves
 
 def image_tile_summary(name, tensor, rows, cols, shape):
-    tf.summary.image(name, pack_images(tensor, rows, cols, shape), max_outputs=1)
-
-def spectrum_tile_summary(name,tensor,shape):
-    pass
-    #tf.summary.audio(name,pack_sn_lightcurves(tensor,shape),sample_rate=1)
+    tf.summary.image(name, make_images(tensor, rows, cols, shape), max_outputs=1)
 
 #############
 
@@ -70,7 +58,7 @@ def get_likelihood(decoder, likelihood_type, sig):
 
         with tf.variable_scope("likelihood", reuse=tf.AUTO_REUSE):
             sigma = tf.get_variable(name='sigma', initializer=sig)
-            tf.summary.scalar('sigma', sigma)
+        tf.summary.scalar('sigma', sigma)
 
         def likelihood(z):
             mean = decoder({'z':z},as_dict=True)['x']
@@ -139,11 +127,7 @@ def model_fn(features, labels, mode, params, config):
         tf.summary.scalar('learning_rate',learning_rate)
 
         train_op = optimizer.minimize(loss, global_step=global_step)
- 
-        with tf.variable_scope("likelihood", reuse=tf.AUTO_REUSE):
-            sigma = tf.get_variable(name='sigma')
 
-        
         eval_metric_ops={
             'elbo': tf.metrics.mean(elbo),
             'negative_log_likelihood': tf.metrics.mean(avg_log_likeli),

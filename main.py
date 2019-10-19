@@ -74,8 +74,8 @@ def main(argv):
         params['full_size']   = [-1,params['width'],params['height'],params['n_channels']]
 
 
-    params['model_dir']   = os.path.join(params['model_dir'], '%s'%params['data_set'], '%s'%params['likelihood'], 'class%d'%params['class_label'], 'net_type_%s'%params['network_type'])
-    params['module_dir']  = os.path.join(params['module_dir'], '%s'%params['data_set'], '%s'%params['likelihood'], 'class%d'%params['class_label'],'net_type_%s'%params['network_type'])
+    params['model_dir']   = os.path.join(params['model_dir'], '%s'%params['data_set'], '%s'%params['likelihood'], 'class%d'%params['class_label'], 'latent_size%d'%params['latent_size'],'net_type_%s'%params['network_type'])
+    params['module_dir']  = os.path.join(params['module_dir'], '%s'%params['data_set'], '%s'%params['likelihood'], 'class%d'%params['class_label'],'latent_size%d'%params['latent_size'],'net_type_%s'%params['network_type'])
     
     for dd in ['model_dir', 'module_dir', 'data_dir']:
         if not os.path.isdir(params[dd]):
@@ -83,7 +83,7 @@ def main(argv):
 
     if not os.path.isdir('./params'):
         os.makedirs('./params')
-    pkl.dump(params, open('./params/params_%s_%s_%d_%s.pkl'%(params['data_set'],params['likelihood'],params['class_label'],params['network_type']),'wb'))
+    pkl.dump(params, open('./params/params_%s_%s_%d_%d_%s.pkl'%(params['data_set'],params['likelihood'],params['class_label'],params['latent_size'],params['network_type']),'wb'))
 
     if params['data_set']=='celeba':
         input_fns      = crd.build_input_fn_celeba(params)

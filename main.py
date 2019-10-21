@@ -27,9 +27,9 @@ flags.DEFINE_string('module_dir', default=os.path.join(os.path.abspath('./'),'mo
 flags.DEFINE_string('data_dir', default=os.path.join(os.path.abspath('./'),'data'), help='directory to store the data')
 
 flags.DEFINE_float('learning_rate', default=1e-3, help='learning rate')    
-flags.DEFINE_integer('batch_size',default=32, help='batch size')
-flags.DEFINE_integer('max_steps', default=10000, help='training steps')    
-flags.DEFINE_integer('n_steps', default=500, help='number of training steps after which to perfrom the evaluation')
+flags.DEFINE_integer('batch_size',default=64, help='batch size')
+flags.DEFINE_integer('max_steps', default=20000, help='training steps')    
+flags.DEFINE_integer('n_steps', default=500, help='number of training steps after which to perform the evaluation')
 
 flags.DEFINE_integer('latent_size',default=8, help='dimensionality of latent space')
 flags.DEFINE_string('activation', default='leaky_relu', help='activation function')
@@ -38,29 +38,35 @@ flags.DEFINE_string('network_type', default='fully_connected', help='which type 
 flags.DEFINE_integer('n_filt',default=64,help='number of filters to use in the first convolutional layer')
 flags.DEFINE_boolean('bias', default=False, help='whether to use a bias in the convolutions')
 
-flags.DEFINE_string('likelihood', default='Bernoulli', help='form of likelihood')
+flags.DEFINE_string('likelihood', default='Gauss', help='form of likelihood')
 flags.DEFINE_float('sigma', default=0.1, help='noise scale used in the Gaussian likelihood')
 flags.DEFINE_integer('class_label', default=-1, help='number of specific class to train on. -1 for all classes')
 
 FLAGS = flags.FLAGS
 
-IMAGE_SHAPES = dict(mnist=[28,28,1],fmnist=[28,28,1],cifar10=[32,32,3],celeba=[64,64,3])
+DATA_SHAPES = dict(mnist=[28,28,1],fmnist=[28,28,1],cifar10=[32,32,3],celeba=[64,64,3],sn=[256,1])
 
 def main(argv):
     del argv
 
     params = FLAGS.flag_values_dict()
-    IMAGE_SHAPE = IMAGE_SHAPES[FLAGS.data_set]
+    DATA_SHAPE = DATA_SHAPES[FLAGS.data_set]
 
     params['activation']  = getattr(tf.nn, params['activation'])
-    params['width']       = IMAGE_SHAPE[0]
-    params['height']      = IMAGE_SHAPE[1]
-    params['n_channels']  = IMAGE_SHAPE[2]
-    params['image_shape'] = IMAGE_SHAPE
 
+    if len(DATA_SHAPE)>2:
+        params['width']       = DATA_SHAPE[0]
+        params['height']      = DATA_SHAPE[1]
+        params['n_channels']  = DATA_SHAPE[2]
+    else:
+        params['length']      = DATA_SHAPE[0]
+        params['n_channels']  = DATA_SHAPE[1]
+    
+    params['data_shape'] = DATA_SHAPE
     flatten = True
-    params['output_size'] = np.prod(IMAGE_SHAPE)
-    params['full_size'] = [params['batch_size'],params['output_size']] 
+
+    params['output_size'] = np.prod(DATA_SHAPE)
+    params['full_size']   = [None,params['output_size']] 
 
     if params['network_type']=='conv':
         flatten = False
@@ -68,18 +74,16 @@ def main(argv):
         params['full_size']   = [None,params['width'],params['height'],params['n_channels']]
 
 
-    params['model_dir']   = os.path.join(params['model_dir'], '%s'%params['data_set'], '%s'%params['likelihood'], 'class%d'%params['class_label'], 'net_type_%s'%params['network_type'])
-    params['module_dir']   = os.path.join(params['module_dir'], '%s'%params['data_set'], '%s'%params['likelihood'], 'class%d'%params['class_label'],'net_type_%s'%params['network_type'])
+    params['model_dir']   = os.path.join(params['model_dir'], '%s'%params['data_set'], '%s'%params['likelihood'], 'class%d'%params['class_label'], 'latent_size%d'%params['latent_size'],'net_type_%s'%params['network_type'])
+    params['module_dir']  = os.path.join(params['module_dir'], '%s'%params['data_set'], '%s'%params['likelihood'], 'class%d'%params['class_label'],'latent_size%d'%params['latent_size'],'net_type_%s'%params['network_type'])
     
     for dd in ['model_dir', 'module_dir', 'data_dir']:
         if not os.path.isdir(params[dd]):
-            print(params[dd])
             os.makedirs(params[dd], exist_ok=True)
 
     if not os.path.isdir('./params'):
         os.makedirs('./params')
-
-    pkl.dump(params, open('./params/params_%s_%d.pkl'%(params['likelihood'],params['class_label']),'wb'))
+    pkl.dump(params, open('./params/params_%s_%s_%d_%d_%s.pkl'%(params['data_set'],params['likelihood'],params['class_label'],params['latent_size'],params['network_type']),'wb'))
 
     if params['data_set']=='celeba':
         input_fns      = crd.build_input_fn_celeba(params)
@@ -109,4 +113,4 @@ def main(argv):
     return True
 
 if __name__ == "__main__":
-  tf.app.run()
+    tf.compat.v1.app.run()

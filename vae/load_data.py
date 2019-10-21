@@ -98,7 +98,7 @@ def load_cifar10(data_dir,flatten=True):
     load cifar10 dataset
     """
 
-    dataset = os.path.join(data_dir+'/cifar10/cifar-10-python.tar.gz')
+    dataset = os.path.join(data_dir,'cifar10/cifar-10-python.tar.gz')
 
     datasetfolder = os.path.dirname(dataset)
     if not os.path.isfile(dataset):
@@ -135,6 +135,22 @@ def load_cifar10(data_dir,flatten=True):
     test_x  = reshape_cifar(test_x,flatten)
     return train_x, train_y, test_x, test_y
 
+
+
+def load_sn_lightcurves(data_dir,flatten=True, train_frac=0.8):
+
+    dataset     = os.path.join(data_dir,'lightcurves/salt2','salt2_spectra_downsampled_deredshifted.npy')
+    
+    wl, spectra = np.load(dataset, allow_pickle=True)
+    spectra/=np.mean(spectra,axis=0)
+    num         = len(spectra)
+    len_train   = int(num*train_frac)
+    x_train     = spectra[0:len_train]
+    x_test      = spectra[len_train::]
+    y_train     = np.empty((len_train))
+    y_test      = np.empty((num-len_train))
+    
+    return x_train, y_train, x_test, y_test
 
 def load_Gaussian_mnist(masking=0,mode=0,path=0):
 

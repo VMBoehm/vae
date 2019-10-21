@@ -33,9 +33,10 @@ def make_images(images, nrows, ncols,shape):
     images = tf.clip_by_value(tf.reshape(images, [1, nrows * width, ncols * height, depth]), 0, 1)
     return images
 
-def image_tile_summary(name, tensor, rows, cols, shape):
-    tf.summary.image(name, pack_images(tensor, rows, cols, shape), max_outputs=1)
 
+def image_tile_summary(name, tensor, rows, cols, shape):
+    tf.summary.image(name, make_images(tensor, rows, cols, shape), max_outputs=1)
+#######
 
 def get_prior(latent_size):
     return tfd.MultivariateNormalDiag(tf.zeros(latent_size), scale_identity_multiplier=1.0)
@@ -57,7 +58,9 @@ def get_likelihood(decoder, likelihood_type, sig):
             return tfd.Independent(tfd.Bernoulli(logits=decoder({'z':z},as_dict=True)['x']))
  
     if likelihood_type=='Gauss':
-        sigma = tf.get_variable(name='sigma', initializer=sig)
+
+        with tf.variable_scope("likelihood", reuse=tf.AUTO_REUSE):
+            sigma = tf.get_variable(name='sigma', initializer=sig)
         tf.summary.scalar('sigma', sigma)
 
         def likelihood(z):
@@ -87,14 +90,23 @@ def model_fn(features, labels, mode, params, config):
         prior        = get_prior(params['latent_size'])
         likelihood   = get_likelihood(decoder, params['likelihood'], params['sigma'])
 
-        image_tile_summary('inputs',features, rows=4, cols=4, shape=params['image_shape'])
+        if params['data_set']=='sn': 
+            spectrum_tile_summary('inputs',features,shape=params['data_shape'])
+        else:
+            image_tile_summary('inputs',features, rows=4, cols=4, shape=params['data_shape'])
 
         approx_posterior_sample = approx_posterior.sample()
         decoder_likelihood      = likelihood(approx_posterior_sample)
-        prior_sample    = prior.sample(params['batch_size'])
-        decoded_samples = likelihood(prior_sample).mean()
-        image_tile_summary('recons',decoder_likelihood.mean(), rows=4, cols=4, shape=params['image_shape'])
-        image_tile_summary('samples',decoded_samples, rows=4, cols=4, shape=params['image_shape'])  
+        prior_sample            = prior.sample(params['batch_size'])
+        decoded_samples         = likelihood(prior_sample).mean()
+
+
+        if params['data_set']=='sn':
+            spectrum_tile_summary('recons',decoder_likelihood.mean(),shape=params['data_shape'])
+            spectrum_tile_summary('samples',decoded_samples,shape=params['data_shape'])
+        else:
+            image_tile_summary('recons',decoder_likelihood.mean(), rows=4, cols=4, shape=params['data_shape'])
+            image_tile_summary('samples',decoded_samples, rows=4, cols=4, shape=params['data_shape'])  
        
         neg_log_likeli  = - decoder_likelihood.log_prob(features)
         avg_log_likeli  = tf.reduce_mean(input_tensor=neg_log_likeli)
@@ -105,7 +117,7 @@ def model_fn(features, labels, mode, params, config):
         elbo           = -(avg_kl+avg_log_likeli)
   
         tf.summary.scalar("elbo", elbo)
-        tf.summary.scalar("log_likelihood", avg_log_likeli)
+        tf.summary.scalar("negative_log_likelihood", avg_log_likeli)
         tf.summary.scalar("kl_divergence", avg_kl)
 
         loss          = -elbo
@@ -117,11 +129,11 @@ def model_fn(features, labels, mode, params, config):
         tf.summary.scalar('learning_rate',learning_rate)
 
         train_op = optimizer.minimize(loss, global_step=global_step)
-  
+
         eval_metric_ops={
             'elbo': tf.metrics.mean(elbo),
             'negative_log_likelihood': tf.metrics.mean(avg_log_likeli),
-            'kl_divergence': tf.metrics.mean(avg_kl)
+            'kl_divergence': tf.metrics.mean(avg_kl),
         }
 
         return tf.estimator.EstimatorSpec(mode=mode, loss=loss, train_op=train_op, eval_metric_ops = eval_metric_ops)

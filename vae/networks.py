@@ -31,7 +31,6 @@ def conv_encoder(activation ,latent_size, n_filt, bias, dataset, is_training=Tru
 
             net = tf.layers.flatten(net) #8x8*n_filt*4
             net = tf.layers.dense(net, latent_size*2, activation=None)
-            print('output encoder')
             return net
 
     return encoder
@@ -46,11 +45,8 @@ def conv_decoder(activation, latent_size, output_size, n_filt, bias, dataset, is
                 NN = 8
             elif dataset in ['mnist','fmnist']: 
                 NN = 7
-            print('input z', z)
             net = tf.layers.dense(z,n_filt*4*NN*NN,activation=activation, use_bias=bias)
-            print('input reshape', net)
             net = tf.reshape(net, [-1, NN, NN,n_filt*4])
-            print('output reshape', net)
 
             if dataset in ['celeba']:
                 net = tf.layers.conv2d_transpose(net,n_filt*4, 5, strides=2, padding='SAME', use_bias=bias) # output_size 16x16/14x14

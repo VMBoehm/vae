@@ -13,29 +13,29 @@ tfd = tfp.distributions
 import vae.networks as nw
 
 
-### these two function are taken from https://github.com/tensorflow/probability/blob/master/tensorflow_probability/examples/vae.py and modified to work with flattened data ny adding a shape keyword
+### these two functions are inspired by https://github.com/tensorflow/probability/blob/master/tensorflow_probability/examples/vae.py and modified to work with flattened data by adding a shape keyword
 
 def pack_images(images, rows, cols,shape):
     """Helper utility to make a field of images.
     Borrowed from Tensorflow Probability
     """
+def make_images(images, nrows, ncols,shape):
     width  = shape[-3]
     height = shape[-2]
     depth  = shape[-1]
+    bsize  = tf.shape(images)[0]
     images = tf.reshape(images, (-1, width, height, depth))
-    batch = tf.shape(images)[0]
-    rows = tf.minimum(rows, batch)
-    cols = tf.minimum(batch // rows, cols)
-    images = images[:rows * cols]
-    images = tf.reshape(images, (rows, cols, width, height, depth))
+    nrows  = tf.minimum(nrows, bsize)
+    ncols  = tf.minimum(bsize//nrows, ncols)
+    images = images[:nrows * ncols]
+    images = tf.reshape(images, (nrows, ncols, width, height, depth))
     images = tf.transpose(images, [0, 2, 1, 3, 4])
-    images = tf.clip_by_value(tf.reshape(images, [1, rows * width, cols * height, depth]), 0, 1)
+    images = tf.clip_by_value(tf.reshape(images, [1, nrows * width, ncols * height, depth]), 0, 1)
     return images
 
 def image_tile_summary(name, tensor, rows, cols, shape):
     tf.summary.image(name, pack_images(tensor, rows, cols, shape), max_outputs=1)
 
-#############
 
 def get_prior(latent_size):
     return tfd.MultivariateNormalDiag(tf.zeros(latent_size), scale_identity_multiplier=1.0)
@@ -77,7 +77,6 @@ def model_fn(features, labels, mode, params, config):
 
     is_training = (mode == tf.estimator.ModeKeys.TRAIN)
 
-    #putting fully connected stuff for mnist here, but should be generalized
     encoder      = nw.make_encoder(params, is_training)
     decoder      = nw.make_decoder(params, is_training)
 

@@ -64,8 +64,8 @@ def main(argv):
 
     if params['network_type']=='conv':
         flatten = False
-        params['output_size'] = IMAGE_SHAPE
-        params['full_size'] = [params['batch_size'],params['width'],params['height'],params['n_channels']]
+        params['output_size'] = DATA_SHAPE
+        params['full_size']   = [None,params['width'],params['height'],params['n_channels']]
 
 
     params['model_dir']   = os.path.join(params['model_dir'], '%s'%params['data_set'], '%s'%params['likelihood'], 'class%d'%params['class_label'], 'net_type_%s'%params['network_type'])

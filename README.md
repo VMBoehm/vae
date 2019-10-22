@@ -42,7 +42,11 @@ The code automatically saves checkpoints and exports the trained model. During t
 ```
 tensorboard --logdir='./model/'
 ```
-![recons](/plots/vae_recons.png)
+e.g. mnist reconstructions with a Gaussian likelihood, a latent space dimensionality of 8 and a fully connected network
 
-![samples](/plots/vae_samples.png)
+![recons](/plots/vae_recons.png)  
+
+and corresponding samples  
+
+![samples](/plots/vae_samples.png)  
 

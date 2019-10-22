@@ -33,12 +33,14 @@ python main.py --helpfull
 ```
 python main.py --data_set='mnist' --latent_size=8 --network_type='conv'
 ```
-will run a VAE on the mnist dataset with a latnt space dimensionality of 8 and (de)convolutional networks as generator/encoder.
+will run a VAE on the mnist dataset with a latent space dimensionality of 8 and (de)convolutional networks as generator/encoder.
+
+### Outputs
+
+The code automatically saves checkpoints and exports the trained model. During the training, the several summaries can be visualized with tensorboard
 
 ```
-python main.py 
+tensorboard --logdir='./model/'
 ```
-runs the defaults settings.
-
 
 

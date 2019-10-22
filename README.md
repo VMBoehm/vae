@@ -37,7 +37,7 @@ will run a VAE on the mnist dataset with a latent space dimensionality of 8 and 
 
 ### Outputs
 
-The code automatically saves checkpoints and exports the trained model. During the training, the several summaries can be visualized with tensorboard
+The code automatically saves checkpoints and exports the trained model. During the training, several summaries can be visualized with tensorboard
 
 ```
 tensorboard --logdir='./model/'

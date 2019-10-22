@@ -4,34 +4,41 @@
 ## What is supported?
 
 ### Datasets
- - mnist
- - fashion-mnist
- - cifar10 (conv network only)
- - celeb-a (conv network only)
+ - [mnist](http://yann.lecun.com/exdb/mnist/) 
+ - [fashion-mnist](https://github.com/zalandoresearch/fashion-mnist)
+ - [cifar10](https://www.cs.toronto.edu/~kriz/cifar.html) (convolutional network only)
+ - [celeb-a](http://mmlab.ie.cuhk.edu.hk/projects/CelebA.html) (convolutional network only)
  
- ### Likelihood types
- - Bernoulli
- - Gaussian
+### Likelihood types
+- Bernoulli
+- Gaussian
  
- ### Network-types
- - fully connected
- - convolutional
+### Network-types
+- fully connected
+- convolutional
  
- ## How to use this repo?
+### How to use this repo?
  
-Download the repo and run 
+To install, download the repo and run 
 ```
-python pip . 
+pip install -e .
 ```
-For instructions for running the VAE with different settings run
+To see all available settings for running the VAE
 
 ```
 python main.py --helpfull
 ```
 
-For example
+### Example
 ```
 python main.py --data_set='mnist' --latent_size=8 --network_type='conv'
 ```
-will run a VAE on the mnist dataset with a latnt space dimensionality of 8 and (de)convolutional networks as generator/encoder. 
+will run a VAE on the mnist dataset with a latnt space dimensionality of 8 and (de)convolutional networks as generator/encoder.
+
+```
+python main.py 
+```
+runs the defaults settings.
+
+
 

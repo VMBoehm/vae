@@ -42,6 +42,7 @@ The code automatically saves checkpoints and exports the trained model. During t
 ```
 tensorboard --logdir='./model/'
 ```
+
 e.g. mnist reconstructions with a Gaussian likelihood, a latent space dimensionality of 8 and a fully connected network
 
 ![recons](/plots/vae_recons.png)  
@@ -49,4 +50,7 @@ e.g. mnist reconstructions with a Gaussian likelihood, a latent space dimensiona
 and corresponding samples  
 
 ![samples](/plots/vae_samples.png)  
+
+#### Notes:
+support of fashion mnist currently requires to download this [repo](https://github.com/zalandoresearch/fashion-mnist) and adapt the link in the top of load_data.py 
 

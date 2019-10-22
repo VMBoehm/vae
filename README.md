@@ -13,11 +13,11 @@
 - Bernoulli
 - Gaussian
  
-### Network-types
+### Network types
 - fully connected
 - convolutional
  
-### How to use this repo?
+## How to use this repo?
  
 To install, download the repo and run 
 ```
@@ -37,10 +37,11 @@ will run a VAE on the mnist dataset with a latent space dimensionality of 8 and 
 
 ### Outputs
 
-The code automatically saves checkpoints and exports the trained model. During the training, several summaries can be visualized with tensorboard
+The code automatically saves checkpoints and exports the trained model. During the training, several summaries can be visualized with tensorboard:
 
 ```
 tensorboard --logdir='./model/'
 ```
+
 
 

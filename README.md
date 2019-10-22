@@ -52,5 +52,5 @@ and corresponding samples
 ![samples](/plots/vae_samples.png)  
 
 #### Notes:
-support of fashion mnist currently requires to download this [repo](https://github.com/zalandoresearch/fashion-mnist) and adapt the link in the top of load_data.py 
+Support of fashion mnist currently requires to download this [repo](https://github.com/zalandoresearch/fashion-mnist) and adapt the link in the top of load_data.py 
 

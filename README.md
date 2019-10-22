@@ -42,6 +42,7 @@ The code automatically saves checkpoints and exports the trained model. During t
 ```
 tensorboard --logdir='./model/'
 ```
+![recons](/plots/vae_recons.png)
 
-
+![samples](/plots/vae_samples.png)
 

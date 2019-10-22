@@ -16,7 +16,9 @@
 ### Network types
 - fully connected
 - convolutional
- 
+
+The VAE can be trained on a subset of the data with a specific label by specifying the 'class_label' flag. 
+
 ## How to use this repo?
  
 To install, download the repo and run 

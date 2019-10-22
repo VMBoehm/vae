@@ -38,7 +38,7 @@ import vae.create_datasets as crd
 from  vae.model import model_fn
 
 flags.DEFINE_string('model_dir', default=os.path.join(os.path.abspath('./'),'model'), help='directory for storing the model (absolute path)')
-flags.DEFINE_string('data_set', default='mnist', help='the tensorflow-dataset to load')
+flags.DEFINE_enum('data_set','mnist',['fmnist','cifar10','celeba','mnist','sn'], help='the tensorflow-dataset to load')
 flags.DEFINE_string('module_dir', default=os.path.join(os.path.abspath('./'),'modules'), help='directory to which to export the modules (absolute path)')
 flags.DEFINE_string('data_dir', default=os.path.join(os.path.abspath('./'),'data'), help='directory to store the data')
 
@@ -50,11 +50,11 @@ flags.DEFINE_integer('n_steps', default=500, help='number of training steps afte
 flags.DEFINE_integer('latent_size',default=8, help='dimensionality of latent space')
 flags.DEFINE_string('activation', default='leaky_relu', help='activation function')
 flags.DEFINE_integer('n_samples', default=16, help='number of samples for encoding')
-flags.DEFINE_string('network_type', default='fully_connected', help='which type of network to use, currently supported: fully_conneted and conv')
+flags.DEFINE_enum('network_type', 'fully_connected', ['fully_connected','conv'], help='which type of network to use, currently supported: fully_conneted and conv')
 flags.DEFINE_integer('n_filt',default=64,help='number of filters to use in the first convolutional layer')
 flags.DEFINE_boolean('bias', default=False, help='whether to use a bias in the convolutions')
 
-flags.DEFINE_string('likelihood', default='Gauss', help='form of likelihood')
+flags.DEFINE_enum('likelihood','Gauss',['Gauss','Bernoulli'], help='form of likelihood')
 flags.DEFINE_float('sigma', default=0.1, help='noise scale used in the Gaussian likelihood')
 flags.DEFINE_integer('class_label', default=-1, help='number of specific class to train on. -1 for all classes')
 

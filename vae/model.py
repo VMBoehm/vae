@@ -132,11 +132,15 @@ def model_fn(features, labels, mode, params, config):
   
         elbo           = -(avg_kl+avg_log_likeli)
   
-        tf.summary.scalar("elbo", elbo)
         tf.summary.scalar("negative_log_likelihood", avg_log_likeli)
-        tf.summary.scalar("kl_divergence", avg_kl)
+        if not params["AE"]:
+            tf.summary.scalar("kl_divergence", avg_kl)
+            tf.summary.scalar("elbo", elbo)
 
-        loss          = -elbo
+        if params["AE"]:
+            loss = avg_log_likeli
+        else:
+            loss = -elbo
   
         global_step   = tf.train.get_or_create_global_step()
         learning_rate = tf.train.cosine_decay(params["learning_rate"], global_step, params["max_steps"])
@@ -145,12 +149,16 @@ def model_fn(features, labels, mode, params, config):
         tf.summary.scalar('learning_rate',learning_rate)
 
         train_op = optimizer.minimize(loss, global_step=global_step)
-
-        eval_metric_ops={
-            'elbo': tf.metrics.mean(elbo),
-            'negative_log_likelihood': tf.metrics.mean(avg_log_likeli),
-            'kl_divergence': tf.metrics.mean(avg_kl),
-        }
+    
+        if not params["AE"]:
+            eval_metric_ops={
+                'elbo': tf.metrics.mean(elbo),
+                'negative_log_likelihood': tf.metrics.mean(avg_log_likeli),
+                'kl_divergence': tf.metrics.mean(avg_kl),
+            }
+        else:
+            eval_metric_ops={
+                'negative_log_likelihood': tf.metrics.mean(avg_log_likeli),} 
 
         return tf.estimator.EstimatorSpec(mode=mode, loss=loss, train_op=train_op, eval_metric_ops = eval_metric_ops)
     else:

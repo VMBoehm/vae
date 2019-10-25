@@ -17,7 +17,9 @@
 - fully connected
 - convolutional
 
-The VAE can be trained on a subset of the data with a specific label by specifying the 'class_label' flag. 
+### Misc
+ - The VAE can be trained on subsets with a specific label by specifying the 'class_label' flag.
+ - The VAE can be trained without the 'V' that is as an AutoEncoder by setting the 'AE' flag.
 
 ## How to use this repo?
  

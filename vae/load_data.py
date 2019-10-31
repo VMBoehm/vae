@@ -50,6 +50,18 @@ def _download_cifar10(dataset):
     print('Downloading data from %s' % origin)
     urllib.request.urlretrieve(origin,dataset)
 
+def _download_fmnist(dataset,subset,labels=False):
+
+    if subset=='test':
+        subset = 't10k'
+    if labels:
+        origin = ('http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/%s-labels-idx1-ubyte.gz'%subset)
+    else:
+        origin = ('http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/%s-images-idx3-ubyte.gz'%subset)
+
+    print('Downloading data from %s' % origin)
+    urllib.request.urlretrieve(origin,dataset)
+
 
 def _get_datafolder_path():
     """
@@ -90,14 +102,34 @@ def load_mnist(data_dir,flatten=True):
 
 
 def load_fmnist(data_dir,flatten=True):
-    
-    x_train, y_train = mnist_reader.load_mnist('./data/fashion', kind='train')
-    x_test, y_test   = mnist_reader.load_mnist('./data/fashion', kind='t10k')
-    x_train = x_train/255.
-    x_test  = x_test/255.
+   
+    data = {}
+    for subset in ['train','test']:
+        data[subset]={}
+        for labels in [True,False]:
+            if labels:
+                dataset=os.path.join(data_dir,'fmnist/fmnist_%s_labels.gz'%subset)
+            else:
+                dataset=os.path.join(data_dir,'fmnist/fmnist_%s_images.gz'%subset)
+            datasetfolder = os.path.dirname(dataset)
+            if not os.path.isfile(dataset):
+                if not os.path.exists(datasetfolder):
+                    os.makedirs(datasetfolder)
+                _download_fmnist(dataset,subset,labels)
+            with gzip.open(dataset, 'rb') as path:
+                if labels:
+                    data[subset]['labels'] = np.frombuffer(path.read(), dtype=np.uint8,offset=8)
+                else:
+                    data[subset]['images'] = np.frombuffer(path.read(), dtype=np.uint8,offset=16)
+                    
+    x_train = data['train']['images'].reshape((-1,28*28))/255.
+    x_test  = data['test']['images'].reshape((-1,28*28))/255.
     if not flatten:
         x_train = x_train.reshape((-1,28,28,1))
         x_test  = x_test.reshape((-1,28,28,1))
+
+    y_train = data['train']['labels']
+    y_test  = data['test']['labels']
 
     return x_train, y_train, x_test, y_test
 

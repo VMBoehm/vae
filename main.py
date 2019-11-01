@@ -54,6 +54,7 @@ flags.DEFINE_enum('network_type', 'fully_connected', ['fully_connected','conv'],
 flags.DEFINE_integer('n_filt',default=64,help='number of filters to use in the first convolutional layer')
 flags.DEFINE_boolean('bias', default=False, help='whether to use a bias in the convolutions')
 flags.DEFINE_boolean('AE', default=False, help='whether to run an AutoEncoder instead of a Variational AutoEncoder')
+flags.DEFINE_boolean('add_noise', default=False, help='whether to add noise to the data before training')
 
 flags.DEFINE_enum('likelihood','Gauss',['Gauss','Bernoulli'], help='form of likelihood')
 flags.DEFINE_float('sigma', default=0.1, help='noise scale used in the Gaussian likelihood')
@@ -114,7 +115,7 @@ def main(argv):
         train_input_fn = input_fns['train']
         eval_input_fn  = input_fns['validation']
     else:
-        train_input_fn, eval_input_fn = crd.build_input_fns(params['data_dir'],params['data_set'], params['batch_size'],label=FLAGS.class_label,flatten=flatten)
+        train_input_fn, eval_input_fn = crd.build_input_fns(params,label=FLAGS.class_label,flatten=flatten)
 
     estimator = tf.estimator.Estimator(model_fn, params=params, config=tf.estimator.RunConfig(model_dir=params['model_dir']),)
     c = tf.placeholder(tf.float32,params['full_size'])

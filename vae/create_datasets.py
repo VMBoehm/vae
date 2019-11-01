@@ -32,14 +32,14 @@ from functools import partial
 
 load_funcs=dict(mnist=ld.load_mnist, fmnist=ld.load_fmnist, cifar10=ld.load_cifar10, sn=ld.load_sn_lightcurves)
 
-def build_input_fns(data_dir,data_type,batch_size,label,flatten):
+def build_input_fns(params,label,flatten):
     """Builds an iterator switching between train and heldout data."""
 
-    print('loading %s dataset'%data_type)
+    print('loading %s dataset'%[params['data_set'])
 
-    load_func = partial(load_funcs[data_type])
-    x_train, y_train, x_test,y_test = load_func(data_dir,flatten)
-    num_classes = len(np.unique(y_train))
+    load_func                       = partial(load_funcs[params['data_set']])
+    x_train, y_train, x_test,y_test = load_func(params['data_dir'],flatten,add_noise=params['add_noise'])
+    num_classes                     = len(np.unique(y_train))
 
     if label in np.arange(num_classes):
         index   = np.where(y_train==label)
@@ -57,7 +57,7 @@ def build_input_fns(data_dir,data_type,batch_size,label,flatten):
     test_sample_size  = len(x_test)
 
     x_train  = x_train.astype(np.float32)
-    shape    = [batch_size]+[ii for ii in x_train.shape[1:]]
+    shape    = [params['batch_size']]+[ii for ii in x_train.shape[1:]]
     x_test   = x_test.astype(np.float32)
 
 
@@ -70,7 +70,7 @@ def build_input_fns(data_dir,data_type,batch_size,label,flatten):
             return xx
 
         train_dataset  = tf.data.Dataset.range(train_sample_size)
-        trainset       = train_dataset.shuffle(max(train_sample_size,10000)).repeat().batch(batch_size,drop_remainder=True)
+        trainset       = train_dataset.shuffle(max(train_sample_size,10000)).repeat().batch(params['batch_size'],drop_remainder=True)
         trainset       = trainset.map(mapping_function) 
         iterator = tf.compat.v1.data.make_one_shot_iterator(trainset)
         return iterator.get_next()
@@ -84,7 +84,7 @@ def build_input_fns(data_dir,data_type,batch_size,label,flatten):
             return xx
 
         test_dataset  = tf.data.Dataset.range(test_sample_size)
-        testset       = test_dataset.shuffle(max(test_sample_size,10000)).batch(batch_size,drop_remainder=True)
+        testset       = test_dataset.shuffle(max(test_sample_size,10000)).batch(params['batch_size'],drop_remainder=True)
         testset       = testset.map(mapping_function)
         return tf.compat.v1.data.make_one_shot_iterator(testset).get_next()
 

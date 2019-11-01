@@ -35,7 +35,7 @@ load_funcs=dict(mnist=ld.load_mnist, fmnist=ld.load_fmnist, cifar10=ld.load_cifa
 def build_input_fns(params,label,flatten):
     """Builds an iterator switching between train and heldout data."""
 
-    print('loading %s dataset'%[params['data_set'])
+    print('loading %s dataset'%params['data_set'])
 
     load_func                       = partial(load_funcs[params['data_set']])
     x_train, y_train, x_test,y_test = load_func(params['data_dir'],flatten,add_noise=params['add_noise'])

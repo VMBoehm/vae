@@ -21,13 +21,20 @@
  - The VAE can be trained on subsets with a specific label by specifying the 'class_label' flag.
  - The VAE can be trained without the 'V' that is as an AutoEncoder by setting the 'AE' flag.
 
-## How to use this repo?
+## Installation
  
-To install, download the repo and run 
+To install, either download the repo and run 
 ```
 pip install -e .
 ```
-To see all available settings for running the VAE
+or run 
+```
+pip install git+https://github.com/VMBoehm/vae
+```
+
+## Usage
+
+To see all available settings, simply run
 
 ```
 python main.py --helpfull

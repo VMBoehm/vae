@@ -81,7 +81,6 @@ def get_likelihood(decoder, likelihood_type, sig):
 
         def likelihood(z):
             mean = decoder({'z':z},as_dict=True)['x']
-            print('mean', mean)
             return tfd.Independent(tfd.MultivariateNormalDiag(loc=mean,scale_identity_multiplier=sigma))
 
     return likelihood
@@ -143,7 +142,11 @@ def model_fn(features, labels, mode, params, config):
             loss = -elbo
   
         global_step   = tf.train.get_or_create_global_step()
-        learning_rate = tf.train.cosine_decay(params["learning_rate"], global_step, params["max_steps"])
+        if params['schedule']==True:
+            learning_rate = tf.train.cosine_decay(params["learning_rate"], global_step, params["max_steps"])
+        else:
+            learning_rate = params['learning_rate']
+
         optimizer     = tf.train.AdamOptimizer(learning_rate)
 
         tf.summary.scalar('learning_rate',learning_rate)

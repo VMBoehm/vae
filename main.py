@@ -46,6 +46,8 @@ flags.DEFINE_float('learning_rate', default=1e-3, help='learning rate')
 flags.DEFINE_integer('batch_size',default=64, help='batch size')
 flags.DEFINE_integer('max_steps', default=20000, help='training steps')    
 flags.DEFINE_integer('n_steps', default=500, help='number of training steps after which to perform the evaluation')
+flags.DEFINE_boolean('schedule', default=True, help='whether to use a cosine decay learning schedule in the training or a fixed learning rate instead')
+flags.DEFINE_float('rate',default=0.9999, help='dropout rate in fully connected network')
 
 flags.DEFINE_integer('latent_size',default=8, help='dimensionality of latent space')
 flags.DEFINE_string('activation', default='leaky_relu', help='activation function')
@@ -132,8 +134,9 @@ def main(argv):
     for ii in range(FLAGS.max_steps//n_steps):
         estimator.train(train_input_fn, steps=n_steps)
         eval_results = estimator.evaluate(eval_input_fn)
-        exporter.export(estimator, params['module_dir'], estimator.latest_checkpoint())
-        print('model evaluation:', eval_results)
+        print('model evaluation on test set:', eval_results)
+        if ii%2==0:
+            exporter.export(estimator, params['module_dir'], estimator.latest_checkpoint())
 
     return True
 

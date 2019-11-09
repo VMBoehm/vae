@@ -84,7 +84,7 @@ def build_input_fns(params,label,flatten):
             return xx
 
         test_dataset  = tf.data.Dataset.range(test_sample_size)
-        testset       = test_dataset.shuffle(max(test_sample_size,10000)).repeat().batch(params['batch_size'],drop_remainder=True)
+        testset       = test_dataset.shuffle(max(test_sample_size,10000)).repeat(2).batch(params['batch_size'],drop_remainder=True)
         testset       = testset.map(mapping_function)
         return tf.compat.v1.data.make_one_shot_iterator(testset).get_next()
 

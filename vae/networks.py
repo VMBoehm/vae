@@ -27,7 +27,13 @@ import tensorflow as tf
 import tensorflow_hub as hub
 
 
-def conv_encoder(activation ,latent_size, n_filt, bias, dataset, is_training=True):
+def conv_encoder(params, is_training=True):
+
+    activation = params['activation']
+    latent_size= params['latent_size']
+    n_filt = params['n_filt']
+    bias   = params['bias']
+    dataset = params['data_set']
 
     def encoder(x):
         with tf.variable_scope('model/encoder',['x'], reuse=tf.AUTO_REUSE):
@@ -52,7 +58,13 @@ def conv_encoder(activation ,latent_size, n_filt, bias, dataset, is_training=Tru
     return encoder
 
 
-def conv_decoder(activation, latent_size, output_size, n_filt, bias, dataset, is_training=True):
+def conv_decoder(params, is_training=True):
+
+    activation = params['activation']
+    latent_size= params['latent_size']
+    n_filt = params['n_filt']
+    bias   = params['bias']
+    dataset = params['data_set']
 
     def decoder(z):
         with tf.variable_scope('model/decoder',['z'], reuse=tf.AUTO_REUSE):
@@ -77,30 +89,40 @@ def conv_decoder(activation, latent_size, output_size, n_filt, bias, dataset, is
             net = tf.layers.batch_normalization(net, training=is_training)
             net = activation(net)
 
-            net = tf.layers.conv2d_transpose(net, output_size[-1], kernel_size=4, strides=1, activation=None, padding='same', name='output_layer')# bring to correct number of channels
+            net = tf.layers.conv2d_transpose(net, params['output_size'][-1], kernel_size=4, strides=1, activation=None, padding='same', name='output_layer')# bring to correct number of channels
         return net
 
     return decoder
 
-def fully_connected_encoder(activation,latent_size):
+def fully_connected_encoder(params,is_training):
+
+    activation = params['activation']
+    latent_size = params['latent_size']
 
     def encoder(x):
         with tf.variable_scope('model/encoder', reuse=tf.AUTO_REUSE):
             net = tf.layers.dense(x, 512, name='dense_1', activation=activation)
             net = tf.layers.dense(net, 256, name='dense_2', activation=activation)
+            if is_training:
+                net = tf.nn.dropout(net,rate=params['rate'])
             net = tf.layers.dense(net, 128, name='dense_3', activation=activation)
             net = tf.layers.dense(net, 2*latent_size, name='dense_4', activation=None)
         return net
     return encoder 
 
-def fully_connected_decoder(activation, output_size):
+def fully_connected_decoder(params,is_training):
     
+    activation = params['activation']
+    latent_size= params['latent_size']
+
     def decoder(z):
         with tf.variable_scope('model/decoder', reuse=tf.AUTO_REUSE):
             net = tf.layers.dense(z, 128, name ='dense_1', activation=activation)
             net = tf.layers.dense(net, 256, name='dense_2', activation=activation)
+            if is_training:
+                net = tf.nn.dropout(net, rate=params['rate'])
             net = tf.layers.dense(net, 512, name='dense_3', activation=activation)
-            net = tf.layers.dense(net, output_size , name='dense_4', activation=None)
+            net = tf.layers.dense(net, params['output_size'] , name='dense_4', activation=None)
         return net
     return decoder
 
@@ -110,9 +132,9 @@ def make_encoder(params, is_training):
     network_type = params['network_type']
 
     if network_type=='fully_connected':
-        encoder_ = fully_connected_encoder(params['activation'], params['latent_size'])
+        encoder_ = fully_connected_encoder(params,is_training)
     elif network_type=='conv':
-        encoder_ = conv_encoder(params['activation'],params['latent_size'],params['n_filt'],params['bias'],params['data_set'],is_training)
+        encoder_ = conv_encoder(params,is_training)
     else:
         raise NotImplementedError("Network type not implemented.")
 
@@ -135,9 +157,9 @@ def make_decoder(params,is_training):
     network_type = params['network_type']
 
     if network_type=='fully_connected':
-        decoder_ = fully_connected_decoder(params['activation'], params['output_size'])
+        decoder_ = fully_connected_decoder(params,is_training)
     elif network_type=='conv':
-        decoder_ = conv_decoder(params['activation'], params['latent_size'], params['output_size'], params['n_filt'], params['bias'], params['data_set'], is_training)
+        decoder_ = conv_decoder(params, is_training)
     else:
         raise NotImplementedError("Network type not implemented.")
 

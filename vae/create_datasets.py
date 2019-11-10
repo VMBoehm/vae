@@ -37,6 +37,17 @@ def add_noise(x,sigma=0.1):
     x  = x+nn*sigma
     return x
 
+def rotate(x,max_ang=10.):
+    shape     = tf.shape(x)
+    batchsize = shape[0]
+    square    = tf.math.reduce_prod(shape[1:])
+    onedim    = tf.cast(tf.math.sqrt(tf.cast(square,dtype=tf.float32)),dtype=tf.int32)
+    rot_ang = tf.random.uniform([batchsize],minval=-max_ang, maxval=max_ang)
+    x = tf.reshape(x, shape=[batchsize,onedim,onedim,1])
+    x = tf.contrib.image.rotate(x,rot_ang)
+    x = tf.reshape(x,shape)
+    return x
+
 def build_input_fns(params,label,flatten):
     """Builds an iterator switching between train and heldout data."""
 
@@ -80,6 +91,8 @@ def build_input_fns(params,label,flatten):
         trainset       = trainset.map(mapping_function)
         if augment=='noise':
             trainset   = trainset.map(add_noise)
+        elif augment=='rotate':
+            trainset   = trainset.map(rotate)
         iterator = tf.compat.v1.data.make_one_shot_iterator(trainset)
         return iterator.get_next()
 

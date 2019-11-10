@@ -57,7 +57,7 @@ flags.DEFINE_enum('network_type', 'fully_connected', ['fully_connected','conv'],
 flags.DEFINE_integer('n_filt',default=64,help='number of filters to use in the first convolutional layer')
 flags.DEFINE_boolean('bias', default=False, help='whether to use a bias in the convolutions')
 flags.DEFINE_boolean('AE', default=False, help='whether to run an AutoEncoder instead of a Variational AutoEncoder')
-flags.DEFINE_enum('augment', 'None', ['None','noise'],help='which kind of data augmentation to use in the training')
+flags.DEFINE_enum('augment', 'None', ['None','noise','rotate'],help='which kind of data augmentation to use in the training')
 
 flags.DEFINE_enum('likelihood','Gauss',['Gauss','Bernoulli'], help='form of likelihood')
 flags.DEFINE_float('sigma', default=0.1, help='noise scale used in the Gaussian likelihood')

@@ -122,10 +122,11 @@ def model_fn(features, labels, mode, params, config):
         neg_log_likeli  = - decoder_likelihood.log_prob(features)
         avg_log_likeli  = tf.reduce_mean(input_tensor=neg_log_likeli)
 
-
         global_step   = tf.train.get_or_create_global_step()
         if params['annealing']:
             beta = 1.-tf.train.cosine_decay(1., global_step, params["max_steps"]//2)
+        elif params['AE']:
+            beta = 0.
         else:
             beta = 1.
 
@@ -136,19 +137,17 @@ def model_fn(features, labels, mode, params, config):
   
         tf.summary.scalar("negative_log_likelihood", avg_log_likeli)
  
-        if not params["AE"]:
-            tf.summary.scalar("kl_divergence", avg_kl)
-            tf.summary.scalar("elbo", elbo)
-
-        if params["AE"]:
-            loss = avg_log_likeli
-        else:
-            loss = -elbo
+        tf.summary.scalar("kl_divergence", avg_kl)
+        tf.summary.scalar("elbo", elbo)
 
         if params['L2-reg']:
             tvars  = tf.trainable_variables()
-            lossL2 = tf.add_n([ tf.nn.l2_loss(v) for v in tvars if ('bias' not in v.name and 'sigma' not in v.name)]) * 0.001
-            loss   = loss+lossL2
+            lossL2 = tf.add_n([ tf.nn.l2_loss(v) for v in tvars if ('bias' not in v.name and 'sigma' not in v.name)]) * 0.01
+            tf.summary.scalar("L2-loss",lossL2)
+        else:
+            lossL2 = 0.
+
+        loss   = -elbo+lossL2
 
         if params['schedule']==True:
             learning_rate = tf.train.cosine_decay(params["learning_rate"], global_step, params["max_steps"])
@@ -162,14 +161,11 @@ def model_fn(features, labels, mode, params, config):
 
         train_op = optimizer.minimize(loss, global_step=global_step)
     
-        if not params["AE"]:
-            eval_metric_ops={
+        eval_metric_ops={
                 'elbo': tf.metrics.mean(elbo),
                 'negative_log_likelihood': tf.metrics.mean(avg_log_likeli),
                 'kl_divergence': tf.metrics.mean(avg_kl),
-            }
-        else:
-            eval_metric_ops={'negative_log_likelihood': tf.metrics.mean(avg_log_likeli),}
+        }
 
         eval_summary_hook = tf.train.SummarySaverHook(save_steps=1,output_dir=params['model_dir'],summary_op=tf.summary.merge_all())
         evaluation_hooks=[eval_summary_hook]

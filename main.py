@@ -48,7 +48,7 @@ flags.DEFINE_integer('max_steps', default=20000, help='training steps')
 flags.DEFINE_integer('n_steps', default=500, help='number of training steps after which to perform the evaluation')
 flags.DEFINE_boolean('schedule', default=True, help='whether to use a cosine decay learning schedule in the training or a fixed learning rate instead')
 flags.DEFINE_boolean('dropout', default=False, help='whether to use dropout regularization in the fully connected network')
-flags.DEFINE_float('rate',default=0.9999, help='dropout rate in fully connected network')
+flags.DEFINE_float('rate',default=0.8, help='dropout rate in fully connected network')
 
 flags.DEFINE_integer('latent_size',default=8, help='dimensionality of latent space')
 flags.DEFINE_string('activation', default='leaky_relu', help='activation function')

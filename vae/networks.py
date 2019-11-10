@@ -103,8 +103,9 @@ def fully_connected_encoder(params,is_training):
         with tf.variable_scope('model/encoder', reuse=tf.AUTO_REUSE):
             net = tf.layers.dense(x, 512, name='dense_1', activation=activation)
             net = tf.layers.dense(net, 256, name='dense_2', activation=activation)
-            if is_training:
-                net = tf.nn.dropout(net,rate=params['rate'])
+            if params['dropout']:
+                if is_training:
+                    net = tf.nn.dropout(net,rate=params['rate'])
             net = tf.layers.dense(net, 128, name='dense_3', activation=activation)
             net = tf.layers.dense(net, 2*latent_size, name='dense_4', activation=None)
         return net
@@ -119,8 +120,9 @@ def fully_connected_decoder(params,is_training):
         with tf.variable_scope('model/decoder', reuse=tf.AUTO_REUSE):
             net = tf.layers.dense(z, 128, name ='dense_1', activation=activation)
             net = tf.layers.dense(net, 256, name='dense_2', activation=activation)
-            if is_training:
-                net = tf.nn.dropout(net, rate=params['rate'])
+            if params['dropout']:
+                if is_training:
+                    net = tf.nn.dropout(net, rate=params['rate'])
             net = tf.layers.dense(net, 512, name='dense_3', activation=activation)
             net = tf.layers.dense(net, params['output_size'] , name='dense_4', activation=None)
         return net

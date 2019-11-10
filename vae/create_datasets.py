@@ -38,6 +38,7 @@ def add_noise(x,sigma=0.1):
     return x
 
 def rotate(x,max_ang=10.):
+    max_ang   = max_ang*np.pi/180.
     shape     = tf.shape(x)
     batchsize = shape[0]
     square    = tf.math.reduce_prod(shape[1:])
@@ -93,6 +94,8 @@ def build_input_fns(params,label,flatten):
             trainset   = trainset.map(add_noise)
         elif augment=='rotate':
             trainset   = trainset.map(rotate)
+        else:
+            pass
         iterator = tf.compat.v1.data.make_one_shot_iterator(trainset)
         return iterator.get_next()
 

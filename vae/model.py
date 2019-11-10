@@ -122,12 +122,20 @@ def model_fn(features, labels, mode, params, config):
         neg_log_likeli  = - decoder_likelihood.log_prob(features)
         avg_log_likeli  = tf.reduce_mean(input_tensor=neg_log_likeli)
 
+
+        global_step   = tf.train.get_or_create_global_step()
+        if params['annealing']:
+            beta = 1.-tf.train.cosine_decay(1., global_step, params["max_steps"]//2)
+        else:
+            beta = 1.
+
         kl             = tfd.kl_divergence(approx_posterior, prior)
         avg_kl         = tf.reduce_mean(kl)
   
-        elbo           = -(avg_kl+avg_log_likeli)
+        elbo           = -(beta*avg_kl+avg_log_likeli)
   
         tf.summary.scalar("negative_log_likelihood", avg_log_likeli)
+ 
         if not params["AE"]:
             tf.summary.scalar("kl_divergence", avg_kl)
             tf.summary.scalar("elbo", elbo)
@@ -137,7 +145,6 @@ def model_fn(features, labels, mode, params, config):
         else:
             loss = -elbo
   
-        global_step   = tf.train.get_or_create_global_step()
         if params['schedule']==True:
             learning_rate = tf.train.cosine_decay(params["learning_rate"], global_step, params["max_steps"])
         else:
@@ -146,6 +153,7 @@ def model_fn(features, labels, mode, params, config):
         optimizer     = tf.train.AdamOptimizer(learning_rate)
 
         tf.summary.scalar('learning_rate',learning_rate)
+        tf.summary.scalar('beta',beta)
 
         train_op = optimizer.minimize(loss, global_step=global_step)
     

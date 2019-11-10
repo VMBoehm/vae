@@ -50,6 +50,7 @@ flags.DEFINE_boolean('schedule', default=True, help='whether to use a cosine dec
 flags.DEFINE_boolean('dropout', default=False, help='whether to use dropout regularization in the fully connected network')
 flags.DEFINE_float('rate',default=0.8, help='dropout rate in fully connected network')
 flags.DEFINE_boolean('annealing', default=False, help='whether to suppress the KL divergence contribution to the loss in the beginning of the training')
+flags.DEFINE_boolean('L2-reg', default=False, help='whether to add L2 regularization on network parameters to the loss')
 
 flags.DEFINE_integer('latent_size',default=8, help='dimensionality of latent space')
 flags.DEFINE_string('activation', default='leaky_relu', help='activation function')
@@ -137,8 +138,7 @@ def main(argv):
         estimator.train(train_input_fn, steps=n_steps)
         eval_results = estimator.evaluate(eval_input_fn)
         print('model evaluation on test set:', eval_results)
-        if ii%2==0:
-            exporter.export(estimator, params['module_dir'], estimator.latest_checkpoint())
+        exporter.export(estimator, params['module_dir'], estimator.latest_checkpoint())
 
     return True
 

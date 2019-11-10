@@ -144,7 +144,12 @@ def model_fn(features, labels, mode, params, config):
             loss = avg_log_likeli
         else:
             loss = -elbo
-  
+
+        if params['L2-reg']:
+            tvars  = tf.trainable_variables()
+            lossL2 = tf.add_n([ tf.nn.l2_loss(v) for v in tvars if ('bias' not in v.name and 'sigma' not in v.name)]) * 0.001
+            loss   = loss+lossL2
+
         if params['schedule']==True:
             learning_rate = tf.train.cosine_decay(params["learning_rate"], global_step, params["max_steps"])
         else:
@@ -167,8 +172,8 @@ def model_fn(features, labels, mode, params, config):
             eval_metric_ops={'negative_log_likelihood': tf.metrics.mean(avg_log_likeli),}
 
         eval_summary_hook = tf.train.SummarySaverHook(save_steps=1,output_dir=params['model_dir'],summary_op=tf.summary.merge_all())
-        # Add it to the evaluation_hook list
         evaluation_hooks=[eval_summary_hook]
+        
         return tf.estimator.EstimatorSpec(mode=mode, loss=loss, train_op=train_op, eval_metric_ops = eval_metric_ops, evaluation_hooks=evaluation_hooks)
     else:
         predictions = {'code': approx_posterior.mean()}

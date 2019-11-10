@@ -47,6 +47,7 @@ flags.DEFINE_integer('batch_size',default=64, help='batch size')
 flags.DEFINE_integer('max_steps', default=20000, help='training steps')    
 flags.DEFINE_integer('n_steps', default=500, help='number of training steps after which to perform the evaluation')
 flags.DEFINE_boolean('schedule', default=True, help='whether to use a cosine decay learning schedule in the training or a fixed learning rate instead')
+flags.DEFINE_boolean('dropout', default=False, help='whether to use dropout regularization in the fully connected network')
 flags.DEFINE_float('rate',default=0.9999, help='dropout rate in fully connected network')
 
 flags.DEFINE_integer('latent_size',default=8, help='dimensionality of latent space')
@@ -56,7 +57,7 @@ flags.DEFINE_enum('network_type', 'fully_connected', ['fully_connected','conv'],
 flags.DEFINE_integer('n_filt',default=64,help='number of filters to use in the first convolutional layer')
 flags.DEFINE_boolean('bias', default=False, help='whether to use a bias in the convolutions')
 flags.DEFINE_boolean('AE', default=False, help='whether to run an AutoEncoder instead of a Variational AutoEncoder')
-flags.DEFINE_boolean('add_noise', default=False, help='whether to add noise to the data before training')
+flags.DEFINE_enum('augment', 'None', ['None','noise'],help='which kind of data augmentation to use in the training')
 
 flags.DEFINE_enum('likelihood','Gauss',['Gauss','Bernoulli'], help='form of likelihood')
 flags.DEFINE_float('sigma', default=0.1, help='noise scale used in the Gaussian likelihood')
@@ -119,7 +120,7 @@ def main(argv):
     else:
         train_input_fn, eval_input_fn = crd.build_input_fns(params,label=FLAGS.class_label,flatten=flatten)
 
-    estimator = tf.estimator.Estimator(model_fn, params=params, config=tf.estimator.RunConfig(model_dir=params['model_dir']),)
+    estimator = tf.estimator.Estimator(model_fn, params=params, config=tf.estimator.RunConfig(model_dir=params['model_dir']))
     c = tf.placeholder(tf.float32,params['full_size'])
     serving_input_fn = tf.estimator.export.build_raw_serving_input_receiver_fn(features=dict(x=c))
 

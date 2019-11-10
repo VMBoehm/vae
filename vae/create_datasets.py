@@ -32,15 +32,22 @@ from functools import partial
 
 load_funcs=dict(mnist=ld.load_mnist, fmnist=ld.load_fmnist, cifar10=ld.load_cifar10, sn=ld.load_sn_lightcurves)
 
+def add_noise(x,sigma=0.1):
+    nn = tf.random.normal(tf.shape(x), dtype=tf.float32)
+    x  = x+nn*sigma
+    return x
+
 def build_input_fns(params,label,flatten):
     """Builds an iterator switching between train and heldout data."""
 
     print('loading %s dataset'%params['data_set'])
 
     load_func                       = partial(load_funcs[params['data_set']])
-    x_train, y_train, x_test,y_test = load_func(params['data_dir'],flatten,add_noise=params['add_noise'])
+    x_train, y_train, x_test,y_test = load_func(params['data_dir'],flatten)
     num_classes                     = len(np.unique(y_train))
-
+    
+    augment                         = params['augment']
+    
     if label in np.arange(num_classes):
         index   = np.where(y_train==label)
         x_train = x_train[index]
@@ -60,7 +67,6 @@ def build_input_fns(params,label,flatten):
     shape    = [params['batch_size']]+[ii for ii in x_train.shape[1:]]
     x_test   = x_test.astype(np.float32)
 
-
     def train_input_fn():
         def mapping_function(x):
             def extract_images(inds):
@@ -72,6 +78,8 @@ def build_input_fns(params,label,flatten):
         train_dataset  = tf.data.Dataset.range(train_sample_size)
         trainset       = train_dataset.shuffle(max(train_sample_size,10000)).repeat().batch(params['batch_size'],drop_remainder=True)
         trainset       = trainset.map(mapping_function)
+        if augment=='noise':
+            trainset   = trainset.map(add_noise)
         iterator = tf.compat.v1.data.make_one_shot_iterator(trainset)
         return iterator.get_next()
 

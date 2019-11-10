@@ -105,23 +105,19 @@ def model_fn(features, labels, mode, params, config):
         prior        = get_prior(params['latent_size'])
         likelihood   = get_likelihood(decoder, params['likelihood'], params['sigma'])
 
-        if params['data_set']=='sn': 
-            spectrum_tile_summary('inputs',features,shape=params['data_shape'])
-        else:
-            image_tile_summary('inputs',features, rows=4, cols=4, shape=params['data_shape'])
-
         approx_posterior_sample = approx_posterior.sample()
         decoder_likelihood      = likelihood(approx_posterior_sample)
         prior_sample            = prior.sample(params['batch_size'])
         decoded_samples         = likelihood(prior_sample).mean()
 
-
-        if params['data_set']=='sn':
-            spectrum_tile_summary('recons',decoder_likelihood.mean(),shape=params['data_shape'])
-            spectrum_tile_summary('samples',decoded_samples,shape=params['data_shape'])
+        if mode == tf.estimator.ModeKeys.TRAIN:
+            image_tile_summary('training/inputs',features, rows=4, cols=4, shape=params['data_shape'])
+            image_tile_summary('training/reconstructions',decoder_likelihood.mean(), rows=4, cols=4, shape=params['data_shape'])
         else:
-            image_tile_summary('recons',decoder_likelihood.mean(), rows=4, cols=4, shape=params['data_shape'])
-            image_tile_summary('samples',decoded_samples, rows=4, cols=4, shape=params['data_shape'])  
+            image_tile_summary('test/inputs',features, rows=4, cols=4, shape=params['data_shape'])
+            image_tile_summary('test/reconstructions',decoder_likelihood.mean(), rows=4, cols=4, shape=params['data_shape'])
+ 
+        image_tile_summary('samples',decoded_samples, rows=4, cols=4, shape=params['data_shape'])  
        
         neg_log_likeli  = - decoder_likelihood.log_prob(features)
         avg_log_likeli  = tf.reduce_mean(input_tensor=neg_log_likeli)
@@ -160,10 +156,12 @@ def model_fn(features, labels, mode, params, config):
                 'kl_divergence': tf.metrics.mean(avg_kl),
             }
         else:
-            eval_metric_ops={
-                'negative_log_likelihood': tf.metrics.mean(avg_log_likeli),} 
+            eval_metric_ops={'negative_log_likelihood': tf.metrics.mean(avg_log_likeli),}
 
-        return tf.estimator.EstimatorSpec(mode=mode, loss=loss, train_op=train_op, eval_metric_ops = eval_metric_ops)
+        eval_summary_hook = tf.train.SummarySaverHook(save_steps=1,output_dir=params['model_dir'],summary_op=tf.summary.merge_all())
+        # Add it to the evaluation_hook list
+        evaluation_hooks=[eval_summary_hook]
+        return tf.estimator.EstimatorSpec(mode=mode, loss=loss, train_op=train_op, eval_metric_ops = eval_metric_ops, evaluation_hooks=evaluation_hooks)
     else:
         predictions = {'code': approx_posterior.mean()}
     

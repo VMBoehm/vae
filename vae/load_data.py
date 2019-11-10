@@ -63,7 +63,7 @@ def _get_datafolder_path():
     return path
 
 
-def load_mnist(data_dir,flatten=True,add_noise=False):
+def load_mnist(data_dir,flatten=True):
     """
     load mnist dataset
     """
@@ -88,14 +88,10 @@ def load_mnist(data_dir,flatten=True,add_noise=False):
         x_train, targets_train = train_set[0].reshape((-1,28,28,1)), train_set[1]
         x_test,  targets_test  = test_set[0].reshape((-1,28,28,1)), test_set[1]
 
-    if add_noise:
-        x_train = add_white_noise(x_train)
-        x_test  = add_white_noise(x_test)
-
     return x_train, targets_train, x_test, targets_test
 
 
-def load_fmnist(data_dir,flatten=True, add_noise=False):
+def load_fmnist(data_dir,flatten=True):
    
     data = {}
     for subset in ['train','test']:
@@ -125,10 +121,6 @@ def load_fmnist(data_dir,flatten=True, add_noise=False):
     y_train = data['train']['labels']
     y_test  = data['test']['labels']
 
-    if add_noise:
-        x_train = add_white_noise(x_train)
-        x_test  = add_white_noise(x_test)
-
     return x_train, y_train, x_test, y_test
 
 
@@ -139,7 +131,7 @@ def reshape_cifar(x,flatten):
         x.reshape(-1,3*32*32)
     return x
 
-def load_cifar10(data_dir,flatten=True, add_noise=False):
+def load_cifar10(data_dir,flatten=True):
     """   
     load cifar10 dataset
     """
@@ -180,10 +172,6 @@ def load_cifar10(data_dir,flatten=True, add_noise=False):
     train_x = reshape_cifar(train_x,flatten)
     test_x  = reshape_cifar(test_x,flatten)
 
-    if add_noise:
-        x_train = add_white_noise(x_train)
-        x_test  = add_white_noise(x_test)
-
 
     return train_x, train_y, test_x, test_y
 
@@ -208,7 +196,7 @@ def load_sn_lightcurves(data_dir,flatten=True, train_frac=0.8, add_noise=False):
     return x_train, y_train, x_test, y_test
 
 
-def load_Gaussian_mnist(masking=0,mode=0,path=0,add_noise=False):
+def load_Gaussian_mnist(masking=0,mode=0,path=0):
 
     if 0 in [masking,mode,path]:
         filename='../data/Gaussian_mnist/ML_inpainted.pkl'
@@ -231,15 +219,11 @@ def load_Gaussian_mnist(masking=0,mode=0,path=0,add_noise=False):
     x_test  = data[:,5000:,:].reshape(-1,data.shape[-1])
     y_test  = labels[:,5000:].flatten()
 
-    if add_noise:
-        x_train = add_white_noise(x_train)
-        x_test  = add_white_noise(x_test)
-
     return  x_train, y_train, x_test, y_test, dict(covs=covs, means=means)
 
 
 
-def load_Gaussian_data(filename, train_num, test_num, add_noise=False):
+def load_Gaussian_data(filename, train_num, test_num):
     
     data, covs, means = pkl.load(open(filename+'_num%d_train.pkl'%train_num,'rb'))
 
@@ -261,15 +245,11 @@ def load_Gaussian_data(filename, train_num, test_num, add_noise=False):
     x_test = data.reshape(-1, data.shape[-1])
     y_test = labels.flatten()   
 
-    if add_noise:
-        x_train = add_white_noise(x_train)
-        x_test  = add_white_noise(x_test)
-
     return  x_train, y_train, x_test, y_test, dict(covs=covs, means=means) 
 
 
 def add_white_noise(x,level=0.01):
-    #input data normalized?
+    #for making mock SN data more realistic
     assert(np.max(x)<=1)
     assert(np.min(x)>=0)
 

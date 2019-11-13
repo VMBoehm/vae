@@ -143,7 +143,7 @@ def model_fn(features, labels, mode, params, config):
         if params['L2-reg']:
             tvars  = tf.trainable_variables()
             lossL2 = tf.add_n([ tf.nn.l2_loss(v) for v in tvars if ('bias' not in v.name and 'sigma' not in v.name)]) * 0.01
-            tf.summary.scalar("L2-loss",lossL2)
+            tf.summary.scalar("L2_loss",lossL2)
         else:
             lossL2 = 0.
 

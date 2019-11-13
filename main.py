@@ -48,7 +48,7 @@ flags.DEFINE_integer('max_steps', default=20000, help='training steps')
 flags.DEFINE_integer('n_steps', default=500, help='number of training steps after which to perform the evaluation')
 flags.DEFINE_boolean('schedule', default=True, help='whether to use a cosine decay learning schedule in the training or a fixed learning rate instead')
 flags.DEFINE_boolean('dropout', default=False, help='whether to use dropout regularization in the fully connected network')
-flags.DEFINE_float('rate',default=0.8, help='dropout rate in fully connected network')
+flags.DEFINE_float('rate',default=0.2, help='dropout rate in fully connected network')
 flags.DEFINE_boolean('annealing', default=False, help='whether to suppress the KL divergence contribution to the loss in the beginning of the training')
 flags.DEFINE_boolean('L2-reg', default=False, help='whether to add L2 regularization on network parameters to the loss')
 
@@ -64,6 +64,7 @@ flags.DEFINE_enum('augment', 'None', ['None','noise','rotate'],help='which kind 
 flags.DEFINE_enum('likelihood','Gauss',['Gauss','Bernoulli'], help='form of likelihood')
 flags.DEFINE_float('sigma', default=0.1, help='noise scale used in the Gaussian likelihood')
 flags.DEFINE_integer('class_label', default=-1, help='number of specific class to train on. -1 for all classes')
+flags.DEFINE_string('tag', default='', help='optional additional tag that is added to name of the run')
 
 FLAGS = flags.FLAGS
 
@@ -97,7 +98,7 @@ def main(argv):
         params['full_size']   = [None,params['width'],params['height'],params['n_channels']]
 
     
-    params['label']       = os.path.join('%s'%params['data_set'], '%s'%params['likelihood'], 'class%d'%params['class_label'], 'latent_size%d'%params['latent_size'],'net_type_%s'%params['network_type'])
+    params['label']       = os.path.join('%s'%params['data_set'], '%s'%params['likelihood'], 'class%d'%params['class_label'], 'latent_size%d'%params['latent_size'],'net_type_%s'%params['network_type'],params['tag'])
     if params['AE']:
         params['label']+='AE'
 

@@ -33,7 +33,6 @@ import pickle as pkl
 # tensorflow packages
 import tensorflow as tf
 import tensorflow_hub as hub
-tf.compat.v1.disable_v2_behavior()
 import vae.create_datasets as crd
 from  vae.model import model_fn
 
@@ -72,7 +71,6 @@ DATA_SHAPES = dict(mnist=[28,28,1],fmnist=[28,28,1],cifar10=[32,32,3],celeba=[64
 
 def main(argv):
     del argv
-    tf.compat.v1.disable_v2_behavior()
     params = FLAGS.flag_values_dict()
     DATA_SHAPE = DATA_SHAPES[FLAGS.data_set]
 
@@ -144,5 +142,5 @@ def main(argv):
     return True
 
 if __name__ == "__main__":
-    tf.compat.v1.disable_v2_behavior()
+    tf.compat.v1.disable_eager_execution()
     tf.compat.v1.app.run()

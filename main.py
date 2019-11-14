@@ -33,7 +33,7 @@ import pickle as pkl
 # tensorflow packages
 import tensorflow as tf
 import tensorflow_hub as hub
-
+tf.compat.v1.disable_v2_behavior()
 import vae.create_datasets as crd
 from  vae.model import model_fn
 
@@ -72,7 +72,7 @@ DATA_SHAPES = dict(mnist=[28,28,1],fmnist=[28,28,1],cifar10=[32,32,3],celeba=[64
 
 def main(argv):
     del argv
-
+    tf.compat.v1.disable_v2_behavior()
     params = FLAGS.flag_values_dict()
     DATA_SHAPE = DATA_SHAPES[FLAGS.data_set]
 
@@ -124,7 +124,7 @@ def main(argv):
         train_input_fn, eval_input_fn = crd.build_input_fns(params,label=FLAGS.class_label,flatten=flatten)
 
     estimator = tf.estimator.Estimator(model_fn, params=params, config=tf.estimator.RunConfig(model_dir=params['model_dir']))
-    c = tf.placeholder(tf.float32,params['full_size'])
+    c = tf.compat.v1.placeholder(tf.float32,params['full_size'])
     serving_input_fn = tf.estimator.export.build_raw_serving_input_receiver_fn(features=dict(x=c))
 
     #train_spec = tf.estimator.TrainSpec(input_fn=train_input_fn, max_steps=params['max_steps'])
@@ -144,4 +144,5 @@ def main(argv):
     return True
 
 if __name__ == "__main__":
+    tf.compat.v1.disable_v2_behavior()
     tf.compat.v1.app.run()

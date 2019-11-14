@@ -29,23 +29,25 @@ import numpy as np
 import os
 import tensorflow_datasets as tfds
 from functools import partial
+import tensorflow_addons as tfa
 
 load_funcs=dict(mnist=ld.load_mnist, fmnist=ld.load_fmnist, cifar10=ld.load_cifar10, sn=ld.load_sn_lightcurves)
 
 def add_noise(x,sigma=0.1):
-    nn = tf.random.normal(tf.shape(x), dtype=tf.float32)
+    nn = tf.random.normal(tf.shape(input=x), dtype=tf.float32)
     x  = x+nn*sigma
     return x
 
 def rotate(x,max_ang=10.):
     max_ang   = max_ang*np.pi/180.
-    shape     = tf.shape(x)
+    shape     = tf.shape(input=x)
     batchsize = shape[0]
-    square    = tf.math.reduce_prod(shape[1:])
+    nchannel  = shape[-1]
+    square    = tf.math.reduce_prod(input_tensor=shape[1:-1])
     onedim    = tf.cast(tf.math.sqrt(tf.cast(square,dtype=tf.float32)),dtype=tf.int32)
     rot_ang = tf.random.uniform([batchsize],minval=-max_ang, maxval=max_ang)
-    x = tf.reshape(x, shape=[batchsize,onedim,onedim,1])
-    x = tf.contrib.image.rotate(x,rot_ang)
+    x = tf.reshape(x, shape=[batchsize,onedim,onedim,nchannel])
+    x = tfa.image.rotate(x,rot_ang,interpolation='BILINEAR')
     x = tf.reshape(x,shape)
     return x
 
@@ -83,7 +85,7 @@ def build_input_fns(params,label,flatten):
         def mapping_function(x):
             def extract_images(inds):
                 return x_train[inds]
-            xx = tf.py_func(extract_images,[x],tf.float32)
+            xx = tf.compat.v1.py_func(extract_images,[x],tf.float32)
             xx.set_shape(shape)
             return xx
 
@@ -103,7 +105,7 @@ def build_input_fns(params,label,flatten):
         def mapping_function(x):
             def extract_images(inds):
                 return x_test[inds]
-            xx = tf.py_func(extract_images,[x],tf.float32)
+            xx = tf.compat.v1.py_func(extract_images,[x],tf.float32)
             xx.set_shape(shape)
             return xx
 
@@ -131,7 +133,7 @@ def build_input_fn_celeba(params):
 
         dset = data[tag]
         # Crop celeb image and resize
-        dset = dset.map(lambda x: tf.cast(tf.image.resize_image_with_crop_or_pad(x['image'], 128, 128), tf.float32) / 256.)
+        dset = dset.map(lambda x: tf.cast(tf.image.resize_with_crop_or_pad(x['image'], 128, 128), tf.float32) / 256.)
 
         if is_training:
             dset = dset.repeat()
@@ -139,7 +141,7 @@ def build_input_fn_celeba(params):
             dset = dset.shuffle(buffer_size=shuffle_buffer)
 
         dset = dset.batch(params['batch_size'],drop_remainder=True)
-        dset = dset.map(lambda x: tf.image.resize_bilinear(x, (64, 64)),num_parallel_calls=2)
+        dset = dset.map(lambda x: tf.image.resize(x, (64, 64), method=tf.image.ResizeMethod.BILINEAR),num_parallel_calls=2)
         dset = dset.prefetch(params['batch_size'])
         return dset
 

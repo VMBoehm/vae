@@ -39,19 +39,19 @@ def make_images(images, nrows, ncols,shape):
     width  = shape[-3]
     height = shape[-2]
     depth  = shape[-1]
-    bsize  = tf.shape(images)[0]
+    bsize  = tf.shape(input=images)[0]
     images = tf.reshape(images, (-1, width, height, depth))
     nrows  = tf.minimum(nrows, bsize)
     ncols  = tf.minimum(bsize//nrows, ncols)
     images = images[:nrows * ncols]
     images = tf.reshape(images, (nrows, ncols, width, height, depth))
-    images = tf.transpose(images, [0, 2, 1, 3, 4])
+    images = tf.transpose(a=images, perm=[0, 2, 1, 3, 4])
     images = tf.clip_by_value(tf.reshape(images, [1, nrows * width, ncols * height, depth]), 0, 1)
     return images
 
 
 def image_tile_summary(name, tensor, rows, cols, shape):
-    tf.summary.image(name, make_images(tensor, rows, cols, shape), max_outputs=1)
+    tf.compat.v1.summary.image(name, make_images(tensor, rows, cols, shape), max_outputs=1)
 #######
 
 def get_prior(latent_size):
@@ -75,9 +75,9 @@ def get_likelihood(decoder, likelihood_type, sig):
  
     if likelihood_type=='Gauss':
 
-        with tf.variable_scope("likelihood", reuse=tf.AUTO_REUSE):
-            sigma = tf.get_variable(name='sigma', initializer=sig)
-        tf.summary.scalar('sigma', sigma)
+        with tf.compat.v1.variable_scope("likelihood", reuse=tf.compat.v1.AUTO_REUSE):
+            sigma = tf.compat.v1.get_variable(name='sigma', initializer=sig)
+        tf.compat.v1.summary.scalar('sigma', sigma)
 
         def likelihood(z):
             mean = decoder({'z':z},as_dict=True)['x']
@@ -122,55 +122,52 @@ def model_fn(features, labels, mode, params, config):
         neg_log_likeli  = - decoder_likelihood.log_prob(features)
         avg_log_likeli  = tf.reduce_mean(input_tensor=neg_log_likeli)
 
-        global_step   = tf.train.get_or_create_global_step()
+        global_step   = tf.compat.v1.train.get_or_create_global_step()
         if params['annealing']:
-            beta = 1.-tf.train.cosine_decay(1., global_step, params["max_steps"]//2)
+            beta = 1.-tf.compat.v1.train.cosine_decay(1., global_step, params["max_steps"]//2)
         elif params['AE']:
             beta = 0.
         else:
             beta = 1.
 
         kl             = tfd.kl_divergence(approx_posterior, prior)
-        avg_kl         = tf.reduce_mean(kl)
+        avg_kl         = tf.reduce_mean(input_tensor=kl)
   
         elbo           = -(beta*avg_kl+avg_log_likeli)
   
-        tf.summary.scalar("negative_log_likelihood", avg_log_likeli)
+        tf.compat.v1.summary.scalar("negative_log_likelihood", avg_log_likeli)
  
-        tf.summary.scalar("kl_divergence", avg_kl)
-        tf.summary.scalar("elbo", elbo)
+        tf.compat.v1.summary.scalar("kl_divergence", avg_kl)
+        tf.compat.v1.summary.scalar("elbo", elbo)
 
         if params['L2-reg']:
-            tvars  = tf.trainable_variables()
+            tvars  = tf.compat.v1.trainable_variables()
             lossL2 = tf.add_n([ tf.nn.l2_loss(v) for v in tvars if ('bias' not in v.name and 'sigma' not in v.name)]) * 0.01
-            tf.summary.scalar("L2_loss",lossL2)
+            tf.compat.v1.summary.scalar("L2_loss",lossL2)
         else:
             lossL2 = 0.
 
         loss   = -elbo+lossL2
 
         if params['schedule']==True:
-            learning_rate = tf.train.cosine_decay(params["learning_rate"], global_step, params["max_steps"])
+            learning_rate = tf.compat.v1.train.cosine_decay(params["learning_rate"], global_step, params["max_steps"])
         else:
             learning_rate = params['learning_rate']
 
-        optimizer     = tf.train.AdamOptimizer(learning_rate)
+        optimizer     = tf.compat.v1.train.AdamOptimizer(learning_rate)
 
-        tf.summary.scalar('learning_rate',learning_rate)
-        tf.summary.scalar('beta',beta)
+        tf.compat.v1.summary.scalar('learning_rate',learning_rate)
+        tf.compat.v1.summary.scalar('beta',beta)
 
         train_op = optimizer.minimize(loss, global_step=global_step)
     
         eval_metric_ops={
-                'elbo': tf.metrics.mean(elbo),
-                'negative_log_likelihood': tf.metrics.mean(avg_log_likeli),
-                'kl_divergence': tf.metrics.mean(avg_kl),
+                'elbo': tf.compat.v1.metrics.mean(elbo),
+                'negative_log_likelihood': tf.compat.v1.metrics.mean(avg_log_likeli),
+                'kl_divergence': tf.compat.v1.metrics.mean(avg_kl),
         }
 
-        eval_summary_hook = tf.train.SummarySaverHook(save_steps=1,output_dir=params['model_dir'],summary_op=tf.summary.merge_all())
-        evaluation_hooks=[eval_summary_hook]
-        
-        return tf.estimator.EstimatorSpec(mode=mode, loss=loss, train_op=train_op, eval_metric_ops = eval_metric_ops, evaluation_hooks=evaluation_hooks)
+        return tf.estimator.EstimatorSpec(mode=mode, loss=loss, train_op=train_op, eval_metric_ops = eval_metric_ops)
     else:
         predictions = {'code': approx_posterior.mean()}
     

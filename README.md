@@ -20,6 +20,8 @@
 ### Misc
  - The VAE can be trained on subsets with a specific label by specifying the 'class_label' flag.
  - The VAE can be trained without the 'V' that is as an AutoEncoder by setting the 'AE' flag.
+ - there's a number of regularization options available for the fully connected network (dropout, L2 regularization on network weights)
+ - data augmentation is posisble by adding noise or image rotations
 
 ## Installation
  
@@ -61,4 +63,8 @@ e.g. mnist reconstructions with a Gaussian likelihood, a latent space dimensiona
 and corresponding samples  
 
 ![samples](/plots/vae_samples.png)  
+
+## TF2 compatibility
+
+A tensorflow 2.0 compatible version is available in the tf2 branch
 
